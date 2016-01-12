@@ -1,0 +1,18 @@
+
+{
+"scratch_dir": "/tmp",
+"remote_base_dir": "/home/carpenamarie/mpi-guidelines/exp",
+
+
+"mpiimpl": "mvapich",
+"mpi_path": "/opt/mvapich/bin",
+"pinning": "rr",
+"machinefile": "/home/carpenamarie/mpi-guidelines/exp/machinefileJupiter",
+
+"benchmark" : {
+    "bench_path" : "/home/carpenamarie/mpi-guidelines/exp/benchmark/mpibenchmark-0.7.0-src",
+    "type" : "reproMPI"
+    }
+
+
+}
