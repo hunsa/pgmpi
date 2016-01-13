@@ -1,0 +1,18 @@
+[
+
+    {
+      "orig" : "MPI_Gather",
+      "mock" : "MPI_Gather_with_MPI_Allgather",
+      "msizes": [ 1, 4, 1024 ]
+     }
+
+    {
+      "orig" : "MPI_Gather",
+      "mock" : "MPI_Gather_with_MPI_Reduce",
+      "msizes": [ 1, 4, 1024, 10000 ]
+    }
+
+]
+
+
+
