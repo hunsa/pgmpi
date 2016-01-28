@@ -7,18 +7,21 @@ import os
 base_path = os.path.dirname( os.path.realpath( sys.argv[0] ) )
 #cd ..
 base_path = os.path.dirname( base_path )
-lib_path = os.path.join( base_path )
+lib_path = os.path.join( base_path, "lib" )
 sys.path.append(lib_path)
 
 from optparse import OptionParser
-import mpiguidelines.config_helpers as conf
-import mpiguidelines.job_generator as jobgen
-
+import mpiguidelines.exp_setup_generator as confgen
 
 if __name__ == "__main__":
 
     parser = OptionParser(usage="usage: %prog [options]")
 
+    parser.add_option("-g", "--glconf",
+                       action="store",
+                       dest="glconf",
+                       type="string",
+                       help="path to guidelines config file")
     parser.add_option("-e", "--expconf",
                        action="store",
                        dest="expconf",
@@ -45,6 +48,11 @@ if __name__ == "__main__":
                        help="Run experiment locally (ignore remote paths)")
 
     (options, args) = parser.parse_args()
+
+    if options.glconf == None or not os.path.exists(options.glconf):
+        print >> sys.stderr, "Guidelines configuration file invalid"
+        parser.print_help()
+        sys.exit(1)
  
     if options.expconf == None or not os.path.exists(options.expconf):
         print >> sys.stderr, "Experiment configuration file invalid"
@@ -67,14 +75,17 @@ if __name__ == "__main__":
     else:
         base_expdir = os.path.abspath(options.base_expdir)
     
-    exp_dir = os.path.join(base_expdir, options.expname)
     
-    exp_file_path = conf.generate_exp_file(options.expconf, options.machconf, exp_dir, options.local_exec)
+    confgen.create_exp_dir_structure(options.expname, base_expdir)
     
-    data = conf.read_json_config_file(exp_file_path)
+    confgen.create_init_config_files(options.expname, base_expdir, options.glconf, options.expconf, options.machconf)
     
-    mpiruns =jobgen.generate_mpiruns_list(data)
-    jobgen.generate_job_file(data, mpiruns)
+    data = confgen.generate_complete_exp_data(options.expname, base_expdir, options.glconf, options.expconf, 
+                                              options.machconf, options.local_exec)
+    confgen.write_complete_exp_data(options.expname, base_expdir, data)
     
-    
+  
+  
+  
+   
 

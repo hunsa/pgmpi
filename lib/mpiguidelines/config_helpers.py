@@ -2,59 +2,9 @@
 import json
 import os
 import sys
-from datetime import datetime
-from mpiguidelines.benchmark import benchmarks as bench
-
-def generate_exp_file(expconf, machineconf, exp_dir, local_exec = False):
-
-    config_data = {}
-    config_data["exp_info"] = read_json_config_file(expconf)
-    config_data["mach_info"] = read_json_config_file(machineconf)
-    config_data["exp_name"] = os.path.basename(exp_dir)
-    config_data["exp_info"]["exp_base_dir"] = os.path.dirname(exp_dir)
-    config_data = translate_and_set_guideline_names(config_data)
-    
-    if local_exec:
-        config_data["mach_info"]["remote_base_dir"] = config_data["exp_info"]["exp_base_dir"]
-    
-    outdir = exp_dir
-    ret = create_local_dir(outdir)
-    if not ret:
-        print ("Specify another experiment name or path to create a new experiment.\n")
-        sys.exit(1)        
-    
-    config_file_path = os.path.join(outdir, config_data["exp_name"] + ".json")
-    write_json_config_file(config_file_path, config_data)
-    
-    return config_file_path
-
-
-
-
-def translate_and_set_guideline_names(config_data):
-    
-    #config_data = helpers.read_json_config_file(config_file)
-    bench_info = config_data["mach_info"]["benchmark"]
-    benchmark = bench.BENCHMARKS[bench_info["type"]](bench_info)
-
-    guidelines = config_data["exp_info"]["guidelines"]
-    for gkey in guidelines.keys():
-        guideline = guidelines[gkey]
-        calls = []
-        for (_, g) in enumerate(guideline):
-            calls.append(g["mpicall"])
-        translated_calls = benchmark.translate_guideline(calls)
-        
-        # use the MPI call names as they were defined, if no benchmark-specific calls exist
-        if not translated_calls:
-            translated_calls = calls
-        
-        for i in xrange(0,len(calls)):    
-            guideline[i]["bench_mpicall"] = translated_calls[i]
-        guidelines[gkey] = guideline
-    config_data["exp_info"]["guidelines"] = guidelines
-    
-    return config_data      
+import csv
+from datetime import datetime 
+from operator import delitem
 
 
 def create_local_dir(dirpath):
@@ -104,3 +54,23 @@ def create_exp_name(expid):
  
  
  
+def read_cvs_file(filepath, fieldnames = None):
+    data = []
+    file_field_names = {}
+    try:
+        with open(filepath) as csvfile:
+            reader = csv.DictReader(filter(lambda row: row[0]!='#', csvfile), 
+                                    fieldnames = fieldnames, delimiter = " ")            
+            for row in reader:
+                if len(file_field_names) == 0 :
+                    file_field_names = row
+                    continue
+                data.append(row)
+                
+    except IOError:
+        data = []
+
+    assert(len(data) > 0), "Cannot read prediction results (%s) or file not correctly formatted" % (filepath)
+    return data
+
+

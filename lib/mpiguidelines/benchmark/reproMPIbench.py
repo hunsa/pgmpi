@@ -1,16 +1,17 @@
 import os
+from __builtin__ import len
 
 class ReproMPI:
 
-    guidelines = {"MPI_Gather<MPI_Allgather" : ["MPI_Gather", "MPI_Allgather"],
-                  "MPI_Gather<MPI_Reduce" : ["MPI_Gather", "GL_Reduce"],
-                  "MPI_Allgather<MPI_Alltoall" : ["MPI_Allgather", "MPI_Alltoall"],
-                  "MPI_Allgather<MPI_Allreduce" : ["MPI_Allgather", "GL_Allreduce"],
-                  "MPI_Scatter<MPI_Bcast" : ["MPI_Scatter", "GL_Bcast"],
-                  "MPI_Reduce<MPI_Allreduce" : ["MPI_Reduce", "MPI_Allreduce"],
-                  #"MPI_Bcast<MPI_Scatter+MPI_Allgather" : ["MPI_Bcast", "GL_ScatterAllgather"],
-                  "MPI_Allgather<MPI_Gather+MPI_Bcast" : ["MPI_Allgather", "GL_GatherBcast"],
-                  "MPI_Allreduce<MPI_Reduce+MPI_Bcast" : ["MPI_Allreduce", "GL_ReduceBcast"]
+    guidelines = {"MPI_Gather<MPI_Gather_with_MPI_Allgather" : ["MPI_Gather", "MPI_Allgather"],
+                  "MPI_Gather<MPI_Gather_with_MPI_Reduce" : ["MPI_Gather", "GL_Gather_as_Reduce"],
+                  "MPI_Allgather<MPI_Allgather_with_MPI_Alltoall" : ["MPI_Allgather", "MPI_Alltoall"],
+                  "MPI_Allgather<MPI_Allgather_with_MPI_Allreduce" : ["MPI_Allgather", "GL_Allgather_as_Allreduce"],
+                  "MPI_Scatter<MPI_Scatter_with_MPI_Bcast" : ["MPI_Scatter", "GL_Scatter_as_Bcast"],
+                  "MPI_Reduce<MPI_Reduce_with_MPI_Allreduce" : ["MPI_Reduce", "MPI_Allreduce"],
+                  "MPI_Bcast<MPI_Scatter+MPI_Allgather" : ["MPI_Bcast", "GL_Bcast_as_ScatterAllgather"],
+                  "MPI_Allgather<MPI_Allgather_with_MPI_Gather_MPI_Bcast" : ["MPI_Allgather", "GL_Allgather_as_GatherBcast"],
+                  "MPI_Allreduce<MPI_Allreduce_with_MPI_Reduce_MPI_Bcast" : ["MPI_Allreduce", "GL_Allreduce_as_ReduceBcast"]
                   }
     input_file_name = "input"
     input_job_name = "job"
@@ -36,37 +37,93 @@ class ReproMPI:
         inputfile = os.path.join(inputfiles_dir, inputname)
 
         with open(inputfile, "w") as f:
-            for (index, e) in enumerate(run):
-                f.write( "%s %s %d\n" % (e["mpicall"], e["msize"], e["nreps"]))
+            for call in run.keys():
+                test = run[call]
+                for msize in test.keys():
+                    e = test[msize]
+                    f.write( "%s %d %d\n" % (call, msize, e["nreps"]))
         return
 
 
-    def generate_job_files(self, jobs_dir, remote_input_dir, remote_output_dir, mpirun_call,
-                           runindex, nodes, nnp, scratch_dir):
+    def generate_and_write_job_files(self, jobs_dir, remote_input_dir, remote_output_dir, mpirun_call,
+                           nmpiruns, nodes, nnp, additional_bench_params = "", scratch_dir = ""):
 
-        jobname = "%s_%d.sh" %  (self.input_job_name, runindex)
+        jobname = "%s.sh" %  (self.input_job_name)
         jobfile = os.path.join(jobs_dir, jobname)
 
-        # path to input/output files specified on the remote server
-        inputname = "%s_%d.txt" %  (self.input_file_name, runindex)
-        inputfile = os.path.join(remote_input_dir, inputname)
-
-        outname = "%s/mpi_bench_r%d.dat" % ( remote_output_dir, runindex)
-        outlogname = "%s/logs/mpi_bench_r%d.log" % ( remote_output_dir, runindex)
-
+        n_input_files = 1
         with open(jobfile, "w") as f:
             f.write( "mkdir -p %s \n" % (remote_output_dir) )
             f.write( "mkdir -p %s/logs \n" % (remote_output_dir) )
-            f.write( "echo \"#@mpiargs=%s\" >> %s \n" %(mpirun_call, outname))
-            f.write( "echo \"#@nodes=%s\" >> %s \n" %(nodes, outname))
-            f.write( "echo \"#@nnp=%s\" >> %s \n" %(nnp, outname))
-            call = "%s %s/mpibenchmark -f %s >> %s 2>> %s \n" \
+            
+            for i in range(0, nmpiruns):
+                
+                # path to input/output files specified on the remote server
+                inputname = "%s_%d.txt" %  (self.input_file_name, n_input_files)
+                inputfile = os.path.join(remote_input_dir, inputname)
+
+                outname = "%s/mpi_bench_r%d.dat" % ( remote_output_dir, i)
+                outlogname = "%s/logs/mpi_bench_r%d.log" % ( remote_output_dir, i)
+                
+                f.write( "echo \"#@mpiargs=%s\" >> %s \n" %(mpirun_call, outname))
+                f.write( "echo \"#@nodes=%s\" >> %s \n" %(nodes, outname))
+                f.write( "echo \"#@nnp=%s\" >> %s \n" %(nnp, outname))
+                call = "%s %s/mpibenchmark -f %s %s >> %s 2>> %s \n" \
                            % ( mpirun_call, self.bench_info["bench_path"], inputfile,
-                               outname, outlogname)
+                               additional_bench_params, outname, outlogname)
 
-            f.write(call)
+                f.write(call)
+                f.write("\n\n")
 
 
+
+    def generate_and_write_prediction_job_files(self, jobs_dir, remote_input_dir, remote_output_dir, mpirun_call,
+                           nodes, nnp, prediction_params, scratch_dir = ""):
+
+        jobname = "%s.sh" %  (self.input_job_name)
+        jobfile = os.path.join(jobs_dir, jobname)
+        
+        assert(prediction_params["max"] > 0), "Specify a maximum number of repetitions for the nrep prediction algorithm"
+        for method in prediction_params["methods"]:
+            assert(method in ["rse", "cov_mean", "cov_median"]), "Specify a defined prediction method (one of res, cov_mean, cov_median)"
+        assert(len(prediction_params["thresholds"]) == len(prediction_params["methods"])), \
+                    "The number of thresholds has to match the number of specified prediction methods"
+        assert(len(prediction_params["windows"]) == len(prediction_params["methods"])),   \
+                    "The number of prediction windows has to match the number of specified prediction methods"
+        
+        prediction_bench_params = "--rep-prediction min=%d,max=%d,step=%d --pred-method=%s --var-thres=%s --var-win=%s" % ( 
+                                    prediction_params["min"],
+                                    prediction_params["max"], prediction_params["step"], 
+                                    ",".join(prediction_params["methods"]),
+                                    ",".join(map(str, prediction_params["thresholds"])),
+                                    ",".join(map(str, prediction_params["windows"]))
+                                    )
+
+        n_input_files = 1
+        with open(jobfile, "w") as f:
+            f.write( "mkdir -p %s \n" % (remote_output_dir) )
+            f.write( "mkdir -p %s/logs \n" % (remote_output_dir) )
+            
+            for i in range(0, prediction_params["nmpiruns"]):
+                
+                # path to input/output files specified on the remote server
+                inputname = "%s_%d.txt" %  (self.input_file_name, n_input_files)
+                inputfile = os.path.join(remote_input_dir, inputname)
+
+                outname = "%s/mpi_bench_r%d.dat" % ( remote_output_dir, i)
+                outlogname = "%s/logs/mpi_bench_r%d.log" % ( remote_output_dir, i)
+                
+                f.write( "echo \"Starting mpirun %d...\" \n" %(i))
+                f.write( "echo \"#@mpiargs=%s\" > %s \n" %(mpirun_call, outname))
+                f.write( "echo \"#@nodes=%s\" >> %s \n" %(nodes, outname))
+                f.write( "echo \"#@nnp=%s\" >> %s \n" %(nnp, outname))
+                call = "%s %s/src/pred_bench/mpibenchmarkPredNreps -f %s %s >> %s 2>> %s \n" \
+                           % ( mpirun_call, self.bench_info["bench_path"], inputfile,
+                               prediction_bench_params, outname, outlogname)
+
+                f.write(call)
+                f.write( "echo \"Done\" ")
+                f.write("\n\n")
 
 
 
