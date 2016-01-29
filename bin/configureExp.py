@@ -2,6 +2,8 @@
 
 import sys
 import os
+import shutil
+from optparse import OptionParser
 
 # in bin
 base_path = os.path.dirname( os.path.realpath( sys.argv[0] ) )
@@ -10,17 +12,17 @@ base_path = os.path.dirname( base_path )
 lib_path = os.path.join( base_path, "lib" )
 sys.path.append(lib_path)
 
-from optparse import OptionParser
 import mpiguidelines.exp_generator as expgen
 from mpiguidelines.common_exp_infos import *
+import mpiguidelines.helpers.file_helpers as helpers
 
 if __name__ == "__main__":
 
     parser = OptionParser(usage="usage: %prog [options]")
 
-    parser.add_option("-n", "--expname",
+    parser.add_option("-p", "--predfile",
                        action="store",
-                       dest="expname",
+                       dest="predfile",
                        type="string",
                        help="unique experiment name")
     parser.add_option("-d", "--expdir",
@@ -28,6 +30,11 @@ if __name__ == "__main__":
                        dest="base_expdir",
                        type="string",
                        help="path to local experiment directory")
+    parser.add_option("-n", "--expname",
+                       action="store",
+                       dest="expname",
+                       type="string",
+                       help="unique experiment name")
 
     (options, args) = parser.parse_args()
 
@@ -59,9 +66,14 @@ if __name__ == "__main__":
     config_file_name = os.path.join(execconfig_dir, expname + ".json")    
         
     config_data = expgen.get_exp_config_data(expname, exp_base_dir)
-    prediction_data = expgen.get_nrep_predictions(expname, exp_base_dir)
-
-    if len(prediction_data) == 0:
+    
+    
+    if options.predfile != None and os.path.exists(options.predfile):
+        shutil.copy(options.predfile, execconfig_dir)
+        prediction_data = helpers.read_json_config_file(options.predfile)
+        
+    max_nrep = 0
+    if options.predfile == None or len(prediction_data) == 0:
         try:
             prediction_cfg = config_data["exp_info"]["prediction"]
             try:

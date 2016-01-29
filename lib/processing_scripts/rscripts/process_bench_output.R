@@ -16,8 +16,8 @@ my_fillcolors <- c("#2e5796", "#f8c3af")#, "#9063cd", "#3E9651", "#CC2529" )
 
 ############################################################
 
-read_data <- function(base_dir) {
-  data_files <- list.files(base_dir, pattern = "*.dat")
+read_data <- function(base_dir, pattern = "*.dat") {
+  data_files <- list.files(base_dir, pattern = pattern)
   
   dflist <- list()
   

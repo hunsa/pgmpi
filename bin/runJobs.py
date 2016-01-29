@@ -52,7 +52,7 @@ if __name__ == "__main__":
         sys.exit(1)
     
     
-    outdir = os.path.join(exp_dir, EXEC_DIRS["results"])
+    outdir = os.path.join(exp_dir, EXEC_DIRS["raw_data"])
     if len(os.listdir(outdir)) > 0:
         if not options.force:
             print >> sys.stderr, "\nJob results already generated in %s. Run script with -f option to overwrite them" %  outdir
@@ -68,7 +68,6 @@ if __name__ == "__main__":
                                            stderr=subprocess.STDOUT
                                         )
                 print routput
-                print("Done\n")
             except subprocess.CalledProcessError, e:
                 print("\nAn error has occurred when running job %s" % f)
                 print e.output

@@ -4,7 +4,7 @@ import os
 import sys
 from datetime import datetime
 from mpiguidelines.benchmark import benchmarks as bench
-import config_helpers as helpers
+from mpiguidelines.helpers import file_helpers as helpers
 from common_exp_infos import *
 import machine_config as machine
 import shutil
@@ -69,48 +69,38 @@ def generate_input_file_data(config_data, pred_info, max_nrep = 0):
 
 def create_input_file(config_data, pred_info, exec_input_dir, max_nrep = 0):
     
+    assert os.path.isdir(exec_input_dir)
+
     bench_info = config_data["mach_info"]["benchmark"]
     benchmark = bench.BENCHMARKS[bench_info["type"]](bench_info)
     
+    print "Generating input data in %s..." % exec_input_dir
+
     input_data = generate_input_file_data(config_data, pred_info, max_nrep)
     benchmark.generate_input_files(exec_input_dir, 1, input_data)
     
-    #print exec_input_dir
+    print "Done."
 
-def get_nrep_predictions(expname, exp_base_dir):
-    pred_dir_name = expname + "_" + PREDICTION_BASEDIR
-    exp_dir = os.path.join(exp_base_dir, expname)
-    pred_dir = os.path.join(exp_dir, pred_dir_name) 
-    pred_results_dir = os.path.join(pred_dir, PREDICTION_DIRS["results"])
-    assert os.path.isdir(pred_dir), "Cannot find prediction directory %s" % (pred_dir_name)
-    assert os.path.isdir(pred_results_dir), "Cannot find prediction results in %s. Please execute the prediction jobs first with ./bin/runPredictionJobs.py " % (pred_results_dir)
-
-       
-    nrep_pred_info = get_nrep_info_from_prediction(pred_results_dir)
-    for test in nrep_pred_info:
-        test["max_nrep"] = max(test["nrep"])
-        print("[%s][msize=%s] Setting max_nrep=%d (from prediction list %s)" % (test["test"], test["msize"], test["max_nrep"], test["nrep"]))
-        
-    return nrep_pred_info
 
 
 
 def create_job_file(config_data, exec_job_dir):
     
+    print "Generating job files in %s..." % exec_job_dir
+    
     bench_info = config_data["mach_info"]["benchmark"]
     benchmark = bench.BENCHMARKS[bench_info["type"]](bench_info)
-    
-    print exec_job_dir
+    execution_dir = helpers.get_execution_dir(config_data)
         
     # input/output directories on the remote server to set inside the job files
     exec_dirname = os.path.basename(os.path.dirname(exec_job_dir))
     remote_input_dir = os.path.join(
-                          os.path.join(config_data["exp_info"]["execution_dir"], exec_dirname),
+                          os.path.join(execution_dir, exec_dirname),
                                      EXEC_DIRS["input"]
                                      )
     remote_output_dir = os.path.join(
-                                     os.path.join(config_data["exp_info"]["execution_dir"], exec_dirname),
-                                     EXEC_DIRS["results"]
+                                     os.path.join(execution_dir, exec_dirname),
+                                     EXEC_DIRS["raw_data"]
                                      )
 
     
@@ -121,61 +111,7 @@ def create_job_file(config_data, exec_job_dir):
     benchmark.generate_and_write_job_files(exec_job_dir, remote_input_dir, remote_output_dir,
                                   mpirun_call, exp_info["nmpiruns"], exp_info["nodes"], exp_info["nnp"]
                                   )
-      
-
-
-def get_nrep_info_from_prediction(pred_results_dir):
+    print "Done."  
     
-    fieldnames=["test", "nrep", "msize", "last_runtime_sec", "pred_method", "pred_value"]
-    nrep_prediction_data = []
-    
-    for f in os.listdir(pred_results_dir):
-        if f.endswith(".dat"):      
-            #try:
-                results = []
-                data = helpers.read_cvs_file(os.path.join(pred_results_dir, f), fieldnames)
-                #pprint(data)
-                current_test = ""
-                for el in data:
-                    if current_test == el["test"]+el["msize"]:
-                        continue
-                    else:
-                        current_test = el["test"]+el["msize"]
-                
-                    duplicate_el = [res for res in results if (res["test"] == el["test"] and res["msize"] == el["msize"]) ]
-                    if len(duplicate_el) > 0:
-                        continue # already have the results for this (test,msize) tuple
-                    else:
-                        results.append({k: el[k] for k in ("test", "nrep", "msize")})
-                    
-                
-                for el in results:
-                    pred_values = [res for res in nrep_prediction_data if (res["test"] == el["test"] and res["msize"] == el["msize"]) ]
-                    #pprint("pred_values")
-                    #pprint(pred_values)
-                    if len(pred_values) == 1:
-                        pred_values[0]["nrep"].append( int(el["nrep"]) )
-                    elif len(pred_values) == 0:
-                        el["nrep"] = [int(el["nrep"])]
-                        
-                        nrep_prediction_data.append(el)
-                    else:
-                        print("An error occurred. Check configuration files")
-                        exit(1)
-                    #pprint("all data")
-                    #pprint(nrep_prediction_data)
-
-            #except Exception:
-            #    print ("Prediction results file incorrectly formatted - file path: %s" % (os.path.join(pred_results_dir, f)))
-    return nrep_prediction_data
-
-
-
-
-
-
-
-
-
 
 

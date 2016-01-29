@@ -4,7 +4,7 @@ import os
 import sys
 from datetime import datetime
 from mpiguidelines.benchmark import benchmarks as bench
-import config_helpers as helpers
+from mpiguidelines.helpers import file_helpers as helpers
 from common_exp_infos import *
 import shutil
 
@@ -34,6 +34,8 @@ def create_exp_dir_structure(expname, exp_base_dir):
     helpers.create_local_dir(pred_dir)
     for d in PREDICTION_DIRS.values():
         helpers.create_local_dir(os.path.join(pred_dir, d))
+    for d in PREDICTION_RESULTS_DIRS.values():
+        helpers.create_local_dir(os.path.join(pred_dir, d))
     
     # create experiment execution directory tree
     exec_dir_name = expname + "_" + EXEC_BASEDIR
@@ -43,10 +45,8 @@ def create_exp_dir_structure(expname, exp_base_dir):
         helpers.create_local_dir(os.path.join(exec_dir, d))
 
     # create experiment results directory tree
-    res_dir = os.path.join(exp_dir, RESULTS_BASEDIR)
-    helpers.create_local_dir(res_dir)
-    for d in RESULTS_DIRS.values():
-        helpers.create_local_dir(os.path.join(res_dir, d))
+    for d in EXEC_RESULTS_DIRS.values():
+        helpers.create_local_dir(os.path.join(exp_dir, d))
 
 
     #create initial configuration directory
@@ -76,9 +76,9 @@ def generate_complete_exp_data(expname, exp_base_dir, glconf, expconf, machconf,
     config_data["exp_info"]["exp_base_dir"] = os.path.dirname(exp_dir)
     config_data = translate_and_set_guideline_names(config_data)
     
-    config_data["exp_info"]["execution_dir"] = config_data["mach_info"]["remote_base_dir"]
+    config_data["exp_info"]["local_exec"] = False
     if local_exec:
-        config_data["exp_info"]["execution_dir"] = config_data["exp_info"]["exp_base_dir"]
+        config_data["exp_info"]["local_exec"] = True
     return config_data
     
     

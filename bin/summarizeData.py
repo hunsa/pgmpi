@@ -4,29 +4,24 @@ import sys
 import os
 import subprocess
 
+# in bin
 base_path = os.path.dirname( os.path.realpath( sys.argv[0] ) )
 #cd ..
 base_path = os.path.dirname( base_path )
-lib_path = os.path.join( base_path )
+lib_path = os.path.join( base_path, "lib" )
 sys.path.append(lib_path)
 
 from optparse import OptionParser
-import mpiguidelines.config_helpers as conf
+from mpiguidelines.helpers import file_helpers as helpers
 from mpiguidelines.common_exp_infos import *
 
 def get_guidelines(exp_data):
-    exp = exp_data["exp_info"]
-    
     all_guidelines = {}
        
-    guidelines = exp["guidelines"]
-    for guideline in guidelines.values():
-        mpicalls = []
-        bench_mpicalls = []
-        for (_, g) in enumerate(guideline):
-            mpicalls.append(g["mpicall"].strip())
-            bench_mpicalls.append(g["bench_mpicall"].strip())
-        all_guidelines["<".join(mpicalls)] = bench_mpicalls
+    guidelines = exp_data["guidelines"]
+    for guideline in guidelines:     
+        guideline_name = guideline["orig"] + "<" + guideline["mock"] 
+        all_guidelines[guideline_name] = guideline["bench_mpicalls"]
 
     return all_guidelines
 
@@ -60,7 +55,7 @@ if __name__ == "__main__":
         base_expdir = os.path.abspath(options.base_expdir)
 
 
-    rscripts_dir = os.path.join(base_path, SCRIPT_DIRS["rscripts"])
+    rscripts_dir = os.path.join(lib_path, SCRIPT_DIRS["rscripts"])
     exp_dir = os.path.abspath(os.path.join(base_expdir, options.expname))
     
     if not (os.path.exists(exp_dir) and os.path.isdir(exp_dir)):
@@ -69,15 +64,16 @@ if __name__ == "__main__":
     
     
     #read experiment configuration    
-    generated_exp_config = os.path.join(exp_dir, options.expname+".json")
-    exp_data = conf.read_json_config_file(generated_exp_config)
+    conf_dir = os.path.join(exp_dir, CONFIG_BASEDIR)
+    generated_exp_config = os.path.join(conf_dir, options.expname+".json")
+    exp_data = helpers.read_json_config_file(generated_exp_config)
     
     # find output dir
-    output_dir = os.path.join(exp_dir, EXP_DIRS["summary"])
-    conf.create_local_dir(output_dir)
+    output_dir = os.path.join(exp_dir, EXEC_RESULTS_DIRS["summary"])
+    helpers.create_local_dir(output_dir)
     
     # find the data file
-    data_dir = os.path.join(exp_dir, EXP_DIRS["alldata"])
+    data_dir = os.path.join(exp_dir, EXEC_RESULTS_DIRS["alldata"])
     data_file = os.path.join(data_dir, "data.txt")
     
     if not (os.path.exists(data_file)):
@@ -91,7 +87,7 @@ if __name__ == "__main__":
 
     print("Guideline list for %s:" % options.expname)
     print("\n".join(all_guidelines))
-    conf.write_to_dataframe(guidelines_file, all_guidelines)
+    helpers.write_to_dataframe(guidelines_file, all_guidelines)
     
     print("\nSummarizing data...\n")
     script = "%s/summarizeGuidelines.R" % (rscripts_dir)

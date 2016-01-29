@@ -9,7 +9,7 @@ class ReproMPI:
                   "MPI_Allgather<MPI_Allgather_with_MPI_Allreduce" : ["MPI_Allgather", "GL_Allgather_as_Allreduce"],
                   "MPI_Scatter<MPI_Scatter_with_MPI_Bcast" : ["MPI_Scatter", "GL_Scatter_as_Bcast"],
                   "MPI_Reduce<MPI_Reduce_with_MPI_Allreduce" : ["MPI_Reduce", "MPI_Allreduce"],
-                  "MPI_Bcast<MPI_Scatter+MPI_Allgather" : ["MPI_Bcast", "GL_Bcast_as_ScatterAllgather"],
+                  "MPI_Bcast<MPI_Scatter_with_MPI_Allgather" : ["MPI_Bcast", "GL_Bcast_as_ScatterAllgather"],
                   "MPI_Allgather<MPI_Allgather_with_MPI_Gather_MPI_Bcast" : ["MPI_Allgather", "GL_Allgather_as_GatherBcast"],
                   "MPI_Allreduce<MPI_Allreduce_with_MPI_Reduce_MPI_Bcast" : ["MPI_Allreduce", "GL_Allreduce_as_ReduceBcast"]
                   }
@@ -122,7 +122,7 @@ class ReproMPI:
                                prediction_bench_params, outname, outlogname)
 
                 f.write(call)
-                f.write( "echo \"Done\" ")
+                f.write( "echo \"Done.\" ")
                 f.write("\n\n")
 
 
