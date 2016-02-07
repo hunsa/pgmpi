@@ -13,7 +13,7 @@ def get_mpi_call(nodes, nnp, mach_info):
             pin_option = ""
         if mach_info["pinning"] == "pinrev":
             pin_option = "-pin_mode consec_rev"
-        call = "%s/mpirun -node %s -nnp %s %s" % ( mach_info["mpi_path"], nodes, nnp, pin_option )
+        call = "%s/mpirun -node 1-%s -nnp %s %s" % ( mach_info["mpi_path"], nodes, nnp, pin_option )
     
     
     elif mach_info["mpiimpl"] == "mvapich":       # MVAPICH calls to mpirun
@@ -24,7 +24,7 @@ def get_mpi_call(nodes, nnp, mach_info):
         if mach_info["pinning"] == "nopin":
             pin_option = ""
 
-        call = "export MV2_USE_OLD_ALLTOALL=1; export MV2_USE_SHMEM_COLL=0; %s/mpirun -np %d -ppn %s %s -machinefile %s" \
+        call = "%s/mpirun -np %d -ppn %s %s -machinefile %s" \
             % ( mach_info["mpi_path"], np, nnp, pin_option, mach_info["machinefile"])
 
     elif mach_info["mpiimpl"] == "mpich":       # MVAPICH calls to mpirun

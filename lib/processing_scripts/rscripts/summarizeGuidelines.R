@@ -2,6 +2,7 @@ library(plyr)
 library(ggplot2)
 library(Rmisc)
 library(grid)
+library(stringr)
 
 # Get command line arguments
 args <- commandArgs(trailingOnly = TRUE)
@@ -27,7 +28,7 @@ for(i in 1:nrow(guidelines)) {
   g <- guidelines[i,]
 
   df2 <- df1[df1$test == g$f1 | df1$test == g$f2,]
-  write_data(df2, paste(output_dir, "/data", g$guideline, ".txt", sep = ''))
+  write_data(df2, paste(output_dir, "/data", gsub("<", "_", g$guideline), ".txt", sep = ''))
 }
 
 
