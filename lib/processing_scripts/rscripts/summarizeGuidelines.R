@@ -28,7 +28,7 @@ for(i in 1:nrow(guidelines)) {
   g <- guidelines[i,]
 
   df2 <- df1[df1$test == g$f1 | df1$test == g$f2,]
-  write_data(df2, paste(output_dir, "/data", gsub("<", "_", g$guideline), ".txt", sep = ''))
+  write_data(df2, paste(output_dir, "/data", gsub("<", "_lte_", g$guideline), ".txt", sep = ''))
 }
 
 
