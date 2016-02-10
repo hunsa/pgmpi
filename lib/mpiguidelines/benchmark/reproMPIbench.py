@@ -8,11 +8,13 @@ class ReproMPI:
                   "MPI_Allgather<MPI_Allgather_with_MPI_Gather_MPI_Bcast" : ["MPI_Allgather", "GL_Allgather_as_GatherBcast"],
                   "MPI_Allreduce<MPI_Allreduce_with_MPI_Reduce_MPI_Bcast" : ["MPI_Allreduce", "GL_Allreduce_as_ReduceBcast"],
                   "MPI_Allreduce<MPI_Allreduce_with_MPI_Reduce_scatter_MPI_Allgather" : ["MPI_Allreduce", "GL_Allreduce_as_ReducescatterAllgather"],
+                  "MPI_Allreduce<MPI_Allreduce_with_MPI_Reduce_scatter_block_MPI_Allgather" : ["MPI_Allreduce", "GL_Allreduce_as_ReducescatterblockAllgather"],
                   "MPI_Bcast<MPI_Bcast_with_MPI_Scatter_MPI_Allgather" : ["MPI_Bcast", "GL_Bcast_as_ScatterAllgather"],
                   "MPI_Gather<MPI_Gather_with_MPI_Allgather" : ["MPI_Gather", "GL_Gather_as_Allgather"],
                   "MPI_Gather<MPI_Gather_with_MPI_Reduce" : ["MPI_Gather", "GL_Gather_as_Reduce"],
                   "MPI_Reduce<MPI_Reduce_with_MPI_Allreduce" : ["MPI_Reduce", "GL_Reduce_as_Allreduce"],
                   "MPI_Reduce<MPI_Reduce_with_MPI_Reduce_scatter_MPI_Gather" : ["MPI_Reduce", "GL_Reduce_as_ReducescatterGather"],
+                  "MPI_Reduce<MPI_Reduce_with_MPI_Reduce_scatter_block_MPI_Gather" : ["MPI_Reduce", "GL_Reduce_as_ReducescatterblockGather"],
                   "MPI_Reduce_scatter_block<MPI_Reduce_scatter_block_with_MPI_Reduce_MPI_Scatter" : ["MPI_Reduce_scatter_block", "GL_Reduce_scatter_block_as_ReduceScatter"],
                   "MPI_Reduce_scatter<MPI_Reduce_scatter_with_MPI_Allreduce" : ["MPI_Reduce_scatter", "GL_Reduce_scatter_as_Allreduce"],
                   "MPI_Reduce_scatter<MPI_Reduce_scatter_with_MPI_Reduce_MPI_Scatterv" : ["MPI_Reduce_scatter", "GL_Reduce_scatter_as_ReduceScatterv"],
@@ -52,13 +54,14 @@ class ReproMPI:
 
 
     def generate_and_write_job_files(self, jobs_dir, remote_input_dir, remote_output_dir, mpirun_call,
-                           nmpiruns, nodes, nnp, additional_bench_params = "", scratch_dir = ""):
+                           nmpiruns, nodes, nnp, job_header, additional_bench_params = "", scratch_dir = ""):
 
         jobname = "%s.sh" %  (self.input_job_name)
         jobfile = os.path.join(jobs_dir, jobname)
 
         n_input_files = 1
         with open(jobfile, "w") as f:
+            f.write(job_header)
             f.write( "mkdir -p %s \n" % (remote_output_dir) )
             f.write( "mkdir -p %s/logs \n" % (remote_output_dir) )
             
@@ -84,7 +87,7 @@ class ReproMPI:
 
 
     def generate_and_write_prediction_job_files(self, jobs_dir, remote_input_dir, remote_output_dir, mpirun_call,
-                           nodes, nnp, prediction_params, scratch_dir = ""):
+                           nodes, nnp, prediction_params, job_header, scratch_dir = ""):
 
         jobname = "%s.sh" %  (self.input_job_name)
         jobfile = os.path.join(jobs_dir, jobname)
@@ -105,8 +108,10 @@ class ReproMPI:
                                     ",".join(map(str, prediction_params["windows"]))
                                     )
 
+
         n_input_files = 1
         with open(jobfile, "w") as f:
+            f.write(job_header)
             f.write( "mkdir -p %s \n" % (remote_output_dir) )
             f.write( "mkdir -p %s/logs \n" % (remote_output_dir) )
             

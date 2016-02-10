@@ -101,9 +101,13 @@ def create_job_file(config_data, pred_job_dir):
     mpirun_call = machine.get_mpi_call(exp_info["nodes"], exp_info["nnp"], config_data["mach_info"])
     assert(mpirun_call != ""), "Could not create mpirun call. Please check the informations provided in the machine configuration file"
     
+    job_header = machine.get_jobfile_header(exp_info["nodes"], exp_info["nnp"], config_data["mach_info"], remote_output_dir)
+    mpi_call_suffix = machine.get_mpi_call_suffix(config_data["mach_info"], remote_output_dir)
+    mpirun_call = mpirun_call + mpi_call_suffix
+    
     benchmark.generate_and_write_prediction_job_files(pred_job_dir, remote_input_dir, remote_output_dir,
                                   mpirun_call, exp_info["nodes"], exp_info["nnp"],
-                                  exp_info["prediction"]
+                                  exp_info["prediction"], job_header
                                   )
     print "Done."   
     
