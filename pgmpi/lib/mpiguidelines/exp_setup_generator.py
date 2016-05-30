@@ -100,7 +100,9 @@ def translate_and_set_guideline_names(config_data):
     new_guidelines = []
     guidelines = config_data["guidelines"]
     for guideline in guidelines:
-        calls = [guideline["orig"], guideline["mock"]]
+        calls = [guideline["orig"] ]
+        if "mock" in guideline:
+            calls.append(guideline["mock"])
         
         translated_calls = benchmark.translate_guideline(calls)
         # use the MPI call names as they were defined, if no benchmark-specific calls exist

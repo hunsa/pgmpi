@@ -19,9 +19,15 @@ def get_guidelines(exp_data):
     all_guidelines = {}
        
     guidelines = exp_data["guidelines"]
-    for guideline in guidelines:     
-        guideline_name = guideline["orig"] + "<" + guideline["mock"] 
-        all_guidelines[guideline_name] = guideline["bench_mpicalls"]
+    for guideline in guidelines:  
+        if "orig" in guideline:
+            if "mock" in guideline:   # check whether it is a pattern guideline  
+                guideline_name = guideline["orig"] + "<" + guideline["mock"] 
+                all_guidelines[guideline_name] = guideline["bench_mpicalls"]
+            else:                     # monotony/split-robustness guideline (need to add an empty second function)
+                guideline_name = guideline["orig"] 
+                all_guidelines[guideline_name] = guideline["bench_mpicalls"]
+                all_guidelines[guideline_name].append("NA")
 
     return all_guidelines
 
