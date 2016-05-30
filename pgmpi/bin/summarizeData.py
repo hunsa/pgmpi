@@ -93,7 +93,8 @@ if __name__ == "__main__":
     script = "%s/summarizeGuidelines.R" % (rscripts_dir)
     try:
         routput = subprocess.check_output(["Rscript", script, rscripts_dir, 
-                                           guidelines_file, data_file, output_dir],
+                                           #guidelines_file, 
+                                           data_file, output_dir],
                                            stderr=subprocess.STDOUT
                                         )
         print routput

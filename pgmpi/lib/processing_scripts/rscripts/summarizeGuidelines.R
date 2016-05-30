@@ -11,12 +11,12 @@ setwd(args[1])
 
 source("process_bench_output.R")
 
-guidelines_file <- args[2]
-data_file <- args[3]
-output_dir <- args[4]
+#guidelines_file <- args[2]
+data_file <- args[2]
+output_dir <- args[3]
 
 
-guidelines <- read.table(guidelines_file, header=TRUE)
+#guidelines <- read.table(guidelines_file, header=TRUE)
 df <- read.table(data_file, header=TRUE, stringsAsFactors = FALSE)
 
 df1 <- ddply(df, .(test, msize, nprocs, nnp, nexp), function(df) {  
@@ -24,12 +24,22 @@ df1 <- ddply(df, .(test, msize, nprocs, nnp, nexp), function(df) {
   df1
 })  
 
-for(i in 1:nrow(guidelines)) {
-  g <- guidelines[i,]
 
-  df2 <- df1[df1$test == g$f1 | df1$test == g$f2,]
-  write_data(df2, paste(output_dir, "/data", gsub("<", "_lte_", g$guideline), ".txt", sep = ''))
+# create summarized output for each mpi_collective 
+all_tests <- unique(df1$test)
+
+for(test in all_tests) {
+  df2 <- df1[df1$test == test,]
+  write_data(df2, paste(output_dir, "/data", test, ".txt", sep = ''))
 }
+
+
+# for(i in 1:nrow(guidelines)) {
+#   g <- guidelines[i,]
+# 
+#   df2 <- df1[df1$test == g$f1 | df1$test == g$f2,]
+#   write_data(df2, paste(output_dir, "/data", gsub("<", "_lte_", g$guideline), ".txt", sep = ''))
+# }
 
 
 

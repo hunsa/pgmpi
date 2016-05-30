@@ -28,7 +28,7 @@ read_data <- function(base_dir, pattern = "*.dat") {
     }
     
     df <- read.table(paste(base_dir,"/",data_files[i],sep=""), header=TRUE, stringsAsFactors = FALSE)
-    df <- set_properties(df, c("nnp", "nprocs"),
+    df <- set_properties(df, c("nnp", "nprocs", "sync"),
                          paste(base_dir,"/",data_files[i],sep=""))    
     #print(df[1,])
     df$nexp  <- i

@@ -4,13 +4,17 @@
 expdir=$1
 expname=$2
 
-if [ $# -lt 2 ]
+expfile=$3
+machinefile=$4
+glfile=$5
+
+if [ $# -lt 5 ]
 then
-echo "Usage: $0 experiment_dir experiment_name"
+echo "Usage: $0 experiment_dir experiment_name exp_config machine_config guidelines_config"
 exit 1
 fi
 
-./bin/setupExp.py -e test_cases/alex2/exp_config.json -m test_cases/alex2/local_mvapich2-2.1.json -g test_cases/alex2/exp_guidelines.json -d $expdir -n $expname --local_exec
+./bin/setupExp.py -e $expfile -m $machinefile -g $glfile -d $expdir -n $expname --local_exec
 
 ./bin/configurePredictionExp.py -d $expdir -n $expname
 
