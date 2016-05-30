@@ -1,0 +1,336 @@
+#  -*- mode: org; -*-
+
+#+TITLE:       PGMPI - Performance Guideline Verification Tool for MPI Collectives
+#+AUTHOR:      
+#+EMAIL:       
+
+#+OPTIONS: ^:nil toc:nil <:nil
+
+#+LaTeX_CLASS_OPTIONS: [a4paper]
+#+LaTeX_CLASS_OPTIONS: [11pt]
+
+#+LATEX_HEADER: \usepackage{bibentry}
+#+LATEX_HEADER: \nobibliography*
+#+LATEX_HEADER: \usepackage{listings}
+#+LATEX_HEADER: \usepackage[margin=2cm]{geometry}
+
+
+* Introduction
+
+The PGMPI framework is designed to verify self-consistent performance
+guidelines of MPI libraries. Its execution consists in several steps,
+which can be performed 
+ - automatically on a single machine
+ - or manually, in case the guideline detection targets a different
+   machine.
+
+The main steps of a typical PGMPI execution are the following:
+ - *nrep prediction*
+ - *experiment execution*
+ - *data processing*.
+
+
+* Prerequisites
+  - an MPI library 
+  - Python 2.7
+  - the ReproMPI Benchmark (version >= 0.9.5) compiled for the target MPI
+    library
+
+
+* Configuration Files
+
+Three configuration files are required to define the set of
+interesting performance guidelines, the MPI library
+location/configuration and finally, the tool configuration.
+
+** Evaluated Performance Guidelines
+
+The input file specifying the performance guidelines to be tested is a
+*json* file with the following format:
+
+#+BEGIN_EXAMPLE
+[   
+      {         
+            "orig": mpi_func1,
+            "mock": comparison_func1,
+            "msizes":  list of message sizes to be tested
+       },
+      {         
+            "orig": mpi_func2,
+            "mock": comparison_func2,
+            "msizes":  list of message sizes to be tested
+       },
+.....
+]
+#+END_EXAMPLE
+
+Each of the collectives specified in this file is benchmarked only
+once, for each the message sizes that are needed for the guidelines in
+which the collective function is involved.
+
+
+*** Example
+
+#+BEGIN_EXAMPLE
+[   
+      {         
+            "orig": "MPI_Gather",
+            "mock": "MPI_Gather_with_MPI_Allgather",
+            "msizes":  [100, 1024, 8192]
+       },
+       {
+            "orig": "MPI_Gather",
+            "mock": "MPI_Gather_with_MPI_Reduce",
+            "msizes":  [2, 3, 4, 100, 1024, 8192]
+       },
+       {
+            "orig": "MPI_Bcast",
+            "mock": "MPI_Bcast_with_MPI_Scatter_MPI_Allgather",
+            "msizes":  [100, 1024, 8192, 10000]
+       }
+]
+#+END_EXAMPLE
+
+
+
+** System Configuration File
+
+This input file provides configuration information for *the target
+platform* where the MPI collectives have to be benchmarked. 
+It is a *json* file defined as follows:
+
+#+BEGIN_EXAMPLE
+{
+"remote_base_dir": "/home/carpenamarie/mpi-guidelines/exp",
+
+"mpiimpl": "mvapich",
+"mpi_path": "/opt/mvapich/bin",
+"pinning": "-bind-to rr",
+"machinefile": "/home/carpenamarie/mpi-guidelines/exp/machinefileJupiter",
+
+"benchmark" : {
+    "bench_path" : "/home/carpenamarie/mpi-guidelines/exp/benchmark/mpibenchmark-0.8.0-src",
+    "type" : "reproMPI"
+    }
+}
+#+END_EXAMPLE
+
+The parameters required for this file are described below:
+
+  - *remote_base_dir* - directory where the experiment will be located
+    on the target system (only meaningful if the experiment is
+    executed on a different machine than the one where it is created)
+  - *mpiimpl* - MPI library; accepted values: mvapich, nec, mpich,
+    openmpi, intelmpi
+  - *mpi_path* - path to the used MPI library installation (*bin*
+    directory)
+  - *pinning* - process-pinning parameter, which is passed directly to
+    the MPI call; accepted values depend on the MPI library, e.g.,
+    "-bind-to rr", "-bind-to core"
+  - *machinefile* - path to a valid machine file; has to be specified
+    only if the MPI library requires it
+  - *benchmark* - comprises two paramters: 
+     - *type* - the name of the used benchmark (supported benchmarks:
+       ReproMPI)
+     - *bench_path* - benchmark path
+
+
+
+** Experiment Configuration
+  
+  This input file defines the parameters of the experiment execution.
+
+  #+BEGIN_EXAMPLE
+  {
+  "procs": 8,
+  "nodes": 1,
+  "nnp": 8,
+  "nmpiruns": 10,
+
+  "prediction": {
+    "min": 10,
+    "max": 1000,
+    "step": 5,
+    "methods": ["rse","cov_mean"],   
+    "thresholds": [0.01, 0.02],
+    "windows": [10,30],
+    "nmpiruns": 3
+    }
+  }
+  #+END_EXAMPLE
+
+  It contains two types of parameters:
+  - parameters related to the experiment
+    - *procs* - total number of processes
+    - *nodes* - number of nodes
+    - *nnp* - number of processes per node
+    - *nmpiruns* - the number of repetitions of one experiment
+  - parameters that configure the prediction of the number of
+    measurement repetitions 
+    - *min/max* - limits of the number of repetitions for all MPI
+      functions/message sizes
+    - *step* 
+    - *methods* - list of prediction methods used (rse, cov_mean,
+      cov_median)
+    - *thresholds/windows* - thresholds and measurement windows
+      corresponding to the specified prediction methods
+    - *nmpiruns* - number of repetitions of the number of repetitions
+      prediction (the maximum number of repetitions obtained is
+      selected)
+
+
+
+
+* Running the PGMPI Tool
+
+The PGMPI tool includes a set of scripts to perform each of the steps
+required to verify performance guidelines for MPI.
+
+** Local Test
+
+A set of predefined input files can be found at *pgmpi/test_cases/local_test*
+
+#+BEGIN_EXAMPLE
+test_cases/local_test
+--- exp_config.json           # specifies the experiment configuration
+--- exp_guidelines.json       # defines the guidelines to be evaluated
+--- local_mpi.json            # MPI library and benchmark  configuration
+#+END_EXAMPLE
+
+To proceed, it is necessary to *modify the local_mpi.json file* to
+match the path to a locally-installed MPI library and ReproMPI
+benchmark.
+
+To run the PGMPI guideline validation tool, simply execute the following script:
+#+BEGIN_EXAMPLE
+$ sh pgmpi/bin/runAll_local.sh exp_dir exp_name path_to_exp_config path_to_local_mpi path_to_exp_guidelines
+#+END_EXAMPLE
+
+It will create an experiment directory in the *exp_dir*
+directory and then perform the following steps:
+  - create experiment directory tree and configuration files in the
+    output directory *exp_dir/exp_name*
+  - create prediction jobs for each MPI collective to be benchmarked
+  - execute prediction jobs (locally) and process results to extract
+    the resulting number of repetitions for each MPI collective
+  - create experiment jobs based on the configuration files and the
+    previously-measured number of repetitions
+  - execute experiment
+  - summarize data and print guideline violations
+
+
+** Step-by-step Execution
+
+If the experiment is designed for execution on a remote machine, the
+steps described above for the local script have to be manually
+executed.
+
+**** Experiment directory creation
+
+#+BEGIN_EXAMPLE
+$ ./pgmpi/bin/setupExp.py -e path_to_exp_config -m path_to_local_mpi -g  path_to_exp_guidelines\
+                    -d exp_dir -n exp_name
+#+END_EXAMPLE
+
+This script will create the experiment directory tree in the
+*exp_dir/exp_name* directory and copy the configuration files into the
+*config* subdirectory.
+
+
+**** Configuration step for the prediction experiment
+
+#+BEGIN_EXAMPLE
+$ ./pgmpi/bin/configurePredictionExp.py -d exp_dir -n exp_name
+#+END_EXAMPLE
+
+This script will create the jobs for the nrep prediction for each of
+the MPI collectives specified in the guidelines configuration file.
+The prediction experiment is created in the
+*exp_dir/exp_name/expname_nrep_prediction_exp* directory.
+
+If the measurements need to be executed on a different machine, the
+entire experiment in the *exp_dir/exp_name* directory has to be copied
+to *remote_base_dir* on the target machine (*remote_base_dir* is the
+same directory as the one specified in the machine configuration file,
+as all experiment paths are defined relative to it in the job file).
+
+#+BEGIN_EXAMPLE
+$ scp -r exp_dir/exp_name remote_machine:remote_base_dir/
+#+END_EXAMPLE
+
+
+
+**** Execution of the prediction experiment (remote machine)
+
+Now the prediction job can be executed on the remote machine. 
+
+#+BEGIN_EXAMPLE
+$ ./pgmpi/bin/runJobs.py -d remote_base_dir/exp_name/exp_name_nrep_prediction_exp
+#+END_EXAMPLE
+
+This will execute the ReproMPI benchmark and generate output files in
+the *remote_base_dir/expname/expname_nrep_prediction_exp/raw_data*
+(which can be then copied back to the original machine).
+
+
+**** Processing of the prediction results
+
+The results can be processed on either the remote or the local
+machine.
+
+#+BEGIN_EXAMPLE
+$ ./pgmpi/bin/processPredictionResults.py -d exp_dir/exp_name/exp_name_nrep_prediction_exp
+#+END_EXAMPLE
+
+The obtained *nrep* values will be computed and written in the
+*exp_name/exp_name_nrep_prediction_exp/results* directory.
+
+
+**** Configuration of the guideline verification experiment
+
+#+BEGIN_EXAMPLE
+$ ./pgmpi/bin/configureExp.py -n exp_name -d exp_dir \
+                              -p exp_dir/exp_name/exp_name_nrep_prediction_exp/results/summary/nrep_prediction_results.json
+#+END_EXAMPLE
+
+The script generates an experiment directory in
+*exp_dir/exp_name/exp_name_experiment_exec* directory. The calls to
+the benchmark are configured to use the *nrep* parameter specified in
+the prediction results file given as an argument.
+
+Note: this enables the experimenter to use previously computed nrep
+values, regardless whether they were measured for a different
+experiment, as long as the *nrep_prediction_results.json* file
+contains results for all the needed MPI collective calls.
+
+
+**** Execution of the guideline verification experiment (remote machine)
+
+The experiment files have to be copied to the remote machine again.
+
+#+BEGIN_EXAMPLE
+$ scp -r exp_dir/exp_name/exp_name_experiment_exec remote_machine:remote_base_dir/exp_name
+#+END_EXAMPLE
+
+The experiment can now be executed on the remote machine. 
+
+#+BEGIN_EXAMPLE
+$ ./pgmpi/bin/runJobs.py -d remote_base_dir/exp_name/exp_name_experiment_exec
+#+END_EXAMPLE
+
+This will execute the ReproMPI benchmark and generate output files in
+the *remote_base_dir/expname/expname_nrep_prediction_exp/raw_data*
+(which can be then copied back to the original machine).
+
+
+**** Guideline verification
+
+Finally, the obtained data can be summarized and then the guideline
+violations can be printed to stdout and (optionally) plotted to
+pdf/tikz graphs.
+
+#+BEGIN_EXAMPLE
+$ ./pgmpi/bin/collectAllData.py -n exp_name -d exp_dir
+$ ./pgmpi/bin/summarizeData.py -n exp_name -d exp_dir
+$ ./pgmpi/bin/checkGuidelines.py -n exp_name -d exp_dir
+#+END_EXAMPLE
