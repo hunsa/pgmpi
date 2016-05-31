@@ -236,6 +236,9 @@ check_all_violations <- function(df, dfgl) {
       
       # get all pattern guidelines (the ones that have a second function f2 defined)
       dfpat <- dfgl[dfgl$f1==func & (!is.na(dfgl$f2)),]
+      if( nrow(dfpat) <= 0 ) { # no pattern guideline defined for this function f1
+        next
+      }
       
       for(pat_idx in 1:nrow(dfpat)) {
         pattern_func <- dfpat[pat_idx,]$f2

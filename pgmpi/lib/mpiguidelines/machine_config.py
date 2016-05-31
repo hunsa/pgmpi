@@ -73,10 +73,9 @@ def get_mpi_call(nodes, nnp, mach_info):
 
 def get_jobfile_header(nodes, nnp, mach_info, remote_output_dir):
     
-    header = ""
-    try:
-        name = mach_info["mach_name"]
-        
+    header = []
+    if "mach_name" in mach_info:     
+        name = mach_info["mach_name"]    
         if name == "vsc3":
             
             qos_name = ""
@@ -94,42 +93,46 @@ def get_jobfile_header(nodes, nnp, mach_info, remote_output_dir):
             input_dir = os.path.join(remote_output_dir, "mpicfg")
             machinefile = "nodesfile"
             
-            header = """#!/bin/sh
-#SBATCH -J mpibench
-#SBATCH -N %d
-#SBATCH --ntasks-per-core=1
-%s
-%s
-export SLURM_CPU_FREQ_REQ="High"
-
-mkdir -p %s
-scontrol show hostnames $SLURM_NODELIST  > %s/%s
-            
-            """ % (nodes, qos_name, part_name, input_dir, input_dir, machinefile)
-        
-    except: # machine name not defined => no header to return
-        pass
-        
+            header = header + ["#!/bin/sh",
+                               "#SBATCH -J mpibench",
+                               "#SBATCH -N %d"   % nodes,
+                               "#SBATCH --ntasks-per-core=1",
+                               qos_name,
+                               part_name,
+                               "export SLURM_CPU_FREQ_REQ=\"High\"",
+                               "mkdir -p %s" % input_dir,
+                               "scontrol show hostnames $SLURM_NODELIST  > %s/%s" % (input_dir, machinefile)
+                               ]
     
-    return header
+    header = header + ["if [ ! -e %s ]; then " % mach_info["mpi_path"], 
+                       "echo \"MPI library path is incorrect: %s \" " % mach_info["mpi_path"],
+                       "exit 1",
+                       "fi"
+                       ]
+    
+    if "machinefile" in mach_info:      # if the machinefile is defined
+        header = header + ["if [ ! -f %s ]; then " % mach_info["machinefile"], 
+                           "echo \"The path to the machine file is incorrect: %s \" " % mach_info["machinefile"],
+                           "exit 1",
+                           "fi"
+                           ]   
+    
+    return "\n".join(header) + "\n"
     
     
     
 def get_mpi_call_suffix(mach_info, remote_output_dir):
     
-    suffix = ""
-    try:
+    suffix = []
+    
+    if "mach_name" in mach_info:
         name = mach_info["mach_name"]
-        
         if name == "vsc3":
             input_dir = os.path.join(remote_output_dir, "mpicfg")
             machinefile = "nodesfile" 
-            suffix = "-machinefile %s/%s" %(input_dir, machinefile)       
-            
-    except:
-        pass
-    
-    return suffix
+            suffix.append("-machinefile %s" %(os.path.join(input_dir, machinefile)) )       
+                
+    return " ".join(suffix)
     
     
     

@@ -1,8 +1,11 @@
 import os
 from __builtin__ import len
 
-class ReproMPI:
+PREDICTION_BENCH_REL_PATH = "src/pred_bench/mpibenchmarkPredNreps"
+REPROMPI_BENCH_REL_PATH = "mpibenchmark"
 
+class ReproMPI:
+    
     guidelines = {"MPI_Allgather<MPI_Allgather_with_MPI_Alltoall" : ["MPI_Allgather", "GL_Allgather_as_Alltoall"],
                   "MPI_Allgather<MPI_Allgather_with_MPI_Allreduce" : ["MPI_Allgather", "GL_Allgather_as_Allreduce"],
                   "MPI_Allgather<MPI_Allgather_with_MPI_Gather_MPI_Bcast" : ["MPI_Allgather", "GL_Allgather_as_GatherBcast"],
@@ -59,9 +62,15 @@ class ReproMPI:
         jobname = "%s.sh" %  (self.input_job_name)
         jobfile = os.path.join(jobs_dir, jobname)
 
+        check_bench = ["if [ ! -f %s/%s ]; then " % (self.bench_info["bench_path"], REPROMPI_BENCH_REL_PATH), 
+                        "echo \"Benchmark path incorrect: %s/%s \" " % (self.bench_info["bench_path"], REPROMPI_BENCH_REL_PATH), 
+                        "fi"
+                        ]  
+
         n_input_files = 1
         with open(jobfile, "w") as f:
             f.write(job_header)
+            f.write("\n".join(check_bench) + "\n")
             f.write( "mkdir -p %s \n" % (remote_output_dir) )
             f.write( "mkdir -p %s/logs \n" % (remote_output_dir) )
             
@@ -77,9 +86,9 @@ class ReproMPI:
                 f.write( "echo \"#@mpiargs=%s\" >> %s \n" %(mpirun_call, outname))
                 f.write( "echo \"#@nodes=%s\" >> %s \n" %(nodes, outname))
                 f.write( "echo \"#@nnp=%s\" >> %s \n" %(nnp, outname))
-                call = "%s %s/mpibenchmark -f %s %s >> %s 2>> %s \n" \
-                           % ( mpirun_call, self.bench_info["bench_path"], inputfile,
-                               additional_bench_params, outname, outlogname)
+                call = "%s %s/%s -f %s %s >> %s 2>> %s \n" \
+                           % ( mpirun_call, self.bench_info["bench_path"], REPROMPI_BENCH_REL_PATH, 
+                               inputfile, additional_bench_params, outname, outlogname)
 
                 f.write(call)
                 f.write("\n\n")
@@ -108,10 +117,16 @@ class ReproMPI:
                                     ",".join(map(str, prediction_params["windows"]))
                                     )
 
+        check_bench = ["if [ ! -f %s/%s ]; then " % (self.bench_info["bench_path"], PREDICTION_BENCH_REL_PATH), 
+                        "echo \"Benchmark path incorrect: %s/%s \" " % (self.bench_info["bench_path"], PREDICTION_BENCH_REL_PATH),
+                        "exit 1",
+                        "fi"
+                        ]  
 
         n_input_files = 1
         with open(jobfile, "w") as f:
             f.write(job_header)
+            f.write("\n".join(check_bench) + "\n")
             f.write( "mkdir -p %s \n" % (remote_output_dir) )
             f.write( "mkdir -p %s/logs \n" % (remote_output_dir) )
             
@@ -128,9 +143,9 @@ class ReproMPI:
                 f.write( "echo \"#@mpiargs=%s\" > %s \n" %(mpirun_call, outname))
                 f.write( "echo \"#@nodes=%s\" >> %s \n" %(nodes, outname))
                 f.write( "echo \"#@nnp=%s\" >> %s \n" %(nnp, outname))
-                call = "%s %s/src/pred_bench/mpibenchmarkPredNreps -f %s %s >> %s 2>> %s \n" \
-                           % ( mpirun_call, self.bench_info["bench_path"], inputfile,
-                               prediction_bench_params, outname, outlogname)
+                call = "%s %s/%s -f %s %s >> %s 2>> %s \n" \
+                           % ( mpirun_call, self.bench_info["bench_path"], PREDICTION_BENCH_REL_PATH,
+                               inputfile, prediction_bench_params, outname, outlogname)
 
                 f.write(call)
                 f.write( "echo \"Done.\" ")
