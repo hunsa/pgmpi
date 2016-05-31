@@ -30,7 +30,7 @@ check_result $?
 ./bin/runJobs.py -d $expdir/$expname/${expname}_nrep_prediction_exp
 check_result $?
 
-./bin/processPredictionResults.py -d $expdir/$expname/${expname}_nrep_predction_exp
+./bin/processPredictionResults.py -d $expdir/$expname/${expname}_nrep_prediction_exp
 check_result $?
 
 ./bin/configureExp.py -n $expname -d $expdir -p $expdir/$expname/${expname}_nrep_prediction_exp/results/summary/nrep_prediction_results.json
