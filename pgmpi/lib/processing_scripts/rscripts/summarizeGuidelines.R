@@ -4,23 +4,25 @@ library(Rmisc)
 library(grid)
 library(stringr)
 
+################################################
+# Summarize experimental data into individual files for each measured MPI collective 
+################################################
+
 # Get command line arguments
 args <- commandArgs(trailingOnly = TRUE)
 
 setwd(args[1])
 
-source("process_bench_output.R")
+source("common/process_bench_output.R")
 
-#guidelines_file <- args[2]
 data_file <- args[2]
 output_dir <- args[3]
 
 
-#guidelines <- read.table(guidelines_file, header=TRUE)
 df <- read.table(data_file, header=TRUE, stringsAsFactors = FALSE)
 
 df1 <- ddply(df, .(test, msize, nprocs, nnp, nexp), function(df) {  
-  df1 <- compute_stats(df, "runtime_sec")
+  df1 <- compute_stats(df, "runtime_sec", remove_outliers = TRUE)
   df1
 })  
 
