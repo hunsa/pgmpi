@@ -1,2 +1,1 @@
-# pgmpi
-MPI Performance Guidelines
+# PGMPI -  MPI Performance Guidelines
