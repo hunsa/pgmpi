@@ -8,7 +8,7 @@ class PGMPIMachineConfiguratorLocal(PGMPIMachineConfigurator):
     mpirun_path = "mpirun"
     mpi_common_args = "-bind-to core"
 
-    exp_output_basedir = "test_cases/output/myexp11"
+    exp_output_basedir = "test_cases/output"
 
     bench_info = {     
                   "bench_path" : "/Users/carpenamarie/Work/tuwien2014/code/mpibenchmark",

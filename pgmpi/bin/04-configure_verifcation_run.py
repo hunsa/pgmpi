@@ -66,11 +66,12 @@ def create_input_file(glconfig_data, pred_data, benchmark, exec_input_dir, max_n
     print "Done."
 
 
-def create_job_file(expconfig_data, benchmark, machine_configurator, exp_job_dir):
+def create_job_file(expname, expconfig_data, benchmark, machine_configurator, exp_job_dir):
         
     print "Generating job files in %s..." % exp_job_dir
     
-    exp_output_dir = machine_configurator.get_exp_output_dir()
+    exp_output_basedir = machine_configurator.get_exp_output_dir()
+    exp_output_dir = os.path.join(exp_output_basedir, expname)
         
     # input/output directories on the remote server to set inside the job files
     exp_dirname = os.path.basename(os.path.dirname(exp_job_dir))
@@ -231,7 +232,7 @@ if __name__ == "__main__":
     
     
     create_input_file(glconfig_data, prediction_data, benchmark, exec_input_dir, max_nrep)
-    create_job_file(expconfig_data, benchmark, machine_configurator, exec_job_dir)
+    create_job_file(expname, expconfig_data, benchmark, machine_configurator, exec_job_dir)
 
     
     
