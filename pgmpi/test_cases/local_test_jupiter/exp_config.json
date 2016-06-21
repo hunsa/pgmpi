@@ -2,11 +2,11 @@
 "procs": 16,
 "nodes": 16,
 "nnp": 1,
-"nmpiruns": 5,
+"nmpiruns": 2,
 
 "prediction": {
-    "min": 10,
-    "max": 1000,
+    "min": 30,
+    "max": 500,
     "step": 5,
     "methods": ["rse","cov_mean"],   
     "thresholds": [0.01, 0.01],

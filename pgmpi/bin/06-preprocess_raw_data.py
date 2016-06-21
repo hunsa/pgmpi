@@ -14,9 +14,9 @@ lib_path = os.path.join( base_path, "lib" )
 sys.path.append(lib_path)
 
 from optparse import OptionParser
-from mpiguidelines.helpers import file_helpers
-from mpiguidelines.common_exp_infos import *
-from mpiguidelines.machine_setup import * 
+from mpiguidelines import file_helpers
+from mpiguidelines import common_exp_infos
+from mpiguidelines import machine_setup 
 from mpiguidelines.benchmark import benchmarks
 
 def get_guidelines(exp_data, benchmark):
@@ -94,7 +94,7 @@ if __name__ == "__main__":
     mach_conf_module = imp.load_source("machconf", options.machcode)   
     mach_class_list = []
     for name, cls in mach_conf_module.__dict__.items():
-        if isclass(cls) and issubclass(cls, PGMPIMachineConfigurator) and not issubclass(PGMPIMachineConfigurator, cls):
+        if isclass(cls) and issubclass(cls, machine_setup.PGMPIMachineConfigurator) and not issubclass(machine_setup.PGMPIMachineConfigurator, cls):
             mach_class_list.append(cls)
     
     if len(mach_class_list) == 0:
@@ -115,7 +115,7 @@ if __name__ == "__main__":
         exit(1)
 
 
-    rscripts_dir = os.path.join(lib_path, SCRIPT_DIRS["rscripts"])
+    rscripts_dir = os.path.join(lib_path, common_exp_infos.SCRIPT_DIRS["rscripts"])
     exp_dir = os.path.abspath(os.path.join(base_expdir, options.expname))
     
     if not (os.path.exists(exp_dir) and os.path.isdir(exp_dir)):
@@ -127,11 +127,11 @@ if __name__ == "__main__":
     gl_data = file_helpers.read_json_config_file(options.glconf)
     
     # find output dir
-    output_dir = os.path.join(exp_dir, EXEC_RESULTS_DIRS["summary"])
+    output_dir = os.path.join(exp_dir, common_exp_infos.EXEC_RESULTS_DIRS["summary"])
     file_helpers.create_local_dir(output_dir)
     
     # find the data file
-    data_dir = os.path.join(exp_dir, EXEC_RESULTS_DIRS["alldata"])
+    data_dir = os.path.join(exp_dir, common_exp_infos.EXEC_RESULTS_DIRS["alldata"])
     data_file = os.path.join(data_dir, "data.txt")
     
     if not (os.path.exists(data_file)):

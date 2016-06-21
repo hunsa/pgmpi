@@ -14,10 +14,10 @@ base_path = os.path.dirname( base_path )
 lib_path = os.path.join( base_path, "lib" )
 sys.path.append(lib_path)
 
-from mpiguidelines.helpers import file_helpers
+from mpiguidelines import file_helpers
 from mpiguidelines.benchmark import benchmarks
-from mpiguidelines.common_exp_infos import *
-from mpiguidelines.machine_setup import *  
+from mpiguidelines import common_exp_infos
+from mpiguidelines import machine_setup  
 
 MAX_NREPS = 1000
 
@@ -77,11 +77,11 @@ def create_job_file(expname, expconfig_data, benchmark, machine_configurator, ex
     exp_dirname = os.path.basename(os.path.dirname(exp_job_dir))
     remote_input_dir = os.path.join(
                           os.path.join(exp_output_dir, exp_dirname),
-                                     EXEC_DIRS["input"]
+                                     common_exp_infos.EXEC_DIRS["input"]
                                      )
     remote_output_dir = os.path.join(
                                      os.path.join(exp_output_dir, exp_dirname),
-                                     EXEC_DIRS["raw_data"]
+                                     common_exp_infos.EXEC_DIRS["raw_data"]
                                      )
      
     bench_args = benchmark.get_verification_bench_args(remote_input_dir, expconfig_data)
@@ -165,15 +165,13 @@ if __name__ == "__main__":
         exp_base_dir = os.path.abspath(options.base_expdir)
   
     
-    exec_dir_name = expname + "_" + EXEC_BASEDIR
+    exec_dir_name = expname + "_" + common_exp_infos.EXEC_BASEDIR
     exp_dir = os.path.join(exp_base_dir, expname)
     assert os.path.isdir(exp_dir), "Cannot find experiment execution directory %s" % (exec_dir_name)
         
     exec_dir = os.path.join(exp_dir, exec_dir_name) 
-    exec_input_dir = os.path.join(exec_dir, EXEC_DIRS["input"])
-    exec_job_dir = os.path.join(exec_dir, EXEC_DIRS["jobs"])
-    #execconfig_dir = os.path.join(exec_dir, EXEC_DIRS["config"])
-    
+    exec_input_dir = os.path.join(exec_dir, common_exp_infos.EXEC_DIRS["input"])
+    exec_job_dir = os.path.join(exec_dir, common_exp_infos.EXEC_DIRS["jobs"])
     
     # load configuration files
     glconfig_data = file_helpers.read_json_config_file(options.glconf)
@@ -205,7 +203,7 @@ if __name__ == "__main__":
     mach_conf_module = imp.load_source("machconf", options.machcode)   
     mach_class_list = []
     for name, cls in mach_conf_module.__dict__.items():
-        if isclass(cls) and issubclass(cls, PGMPIMachineConfigurator) and not issubclass(PGMPIMachineConfigurator, cls):
+        if isclass(cls) and issubclass(cls, machine_setup.PGMPIMachineConfigurator) and not issubclass(machine_setup.PGMPIMachineConfigurator, cls):
             mach_class_list.append(cls)
     
     if len(mach_class_list) == 0:

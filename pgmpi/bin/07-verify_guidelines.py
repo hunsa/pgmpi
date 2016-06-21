@@ -13,7 +13,7 @@ base_path = os.path.dirname( base_path )
 lib_path = os.path.join( base_path, "lib" )
 sys.path.append(lib_path)
 
-from mpiguidelines.common_exp_infos import *
+from mpiguidelines import common_exp_infos
 
 if __name__ == "__main__":
 
@@ -44,7 +44,7 @@ if __name__ == "__main__":
         base_expdir = os.path.abspath(options.base_expdir)
 
 
-    rscripts_dir = os.path.join(lib_path, SCRIPT_DIRS["rscripts"])
+    rscripts_dir = os.path.join(lib_path, common_exp_infos.SCRIPT_DIRS["rscripts"])
     exp_dir = os.path.abspath(os.path.join(base_expdir, options.expname))
     
     if not (os.path.exists(exp_dir) and os.path.isdir(exp_dir)):
@@ -53,7 +53,7 @@ if __name__ == "__main__":
     
     
     # find output dir
-    summary_dir = os.path.join(exp_dir, EXEC_RESULTS_DIRS["summary"])
+    summary_dir = os.path.join(exp_dir, common_exp_infos.EXEC_RESULTS_DIRS["summary"])
     
     if not (os.path.exists(summary_dir)):
         print  "\nSummarized results do not exist: %s\n" %  summary_dir

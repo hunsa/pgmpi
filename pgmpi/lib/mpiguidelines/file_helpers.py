@@ -72,7 +72,7 @@ def read_cvs_file(filepath, fieldnames = None):
     except IOError:
         data = []
 
-    assert(len(data) > 0), "Cannot read prediction results (%s) or file not correctly formatted" % (filepath)
+    assert(len(data) > 0), "Cannot read file or file not correctly formatted (%s)" % (filepath)
     return data
 
 

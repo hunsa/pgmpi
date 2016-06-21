@@ -12,8 +12,8 @@ lib_path = os.path.join( base_path, "lib" )
 sys.path.append(lib_path)
 
 from optparse import OptionParser
-from mpiguidelines.helpers import file_helpers
-from mpiguidelines.common_exp_infos import *
+from mpiguidelines import file_helpers
+from mpiguidelines import common_exp_infos
 
 
 if __name__ == "__main__":
@@ -45,10 +45,10 @@ if __name__ == "__main__":
         base_expdir = os.path.abspath(options.base_expdir)
 
 
-    rscripts_dir = os.path.join(lib_path, SCRIPT_DIRS["rscripts"])
+    rscripts_dir = os.path.join(lib_path, common_exp_infos.SCRIPT_DIRS["rscripts"])
     exp_dir = os.path.abspath(os.path.join(base_expdir, options.expname))
     
-    exec_dir_name = options.expname + "_" + EXEC_BASEDIR
+    exec_dir_name = options.expname + "_" + common_exp_infos.EXEC_BASEDIR
     exec_dir = os.path.join(exp_dir, exec_dir_name)
     assert os.path.isdir(exp_dir), "Cannot find experiment execution directory %s" % (exec_dir)
     
@@ -58,13 +58,13 @@ if __name__ == "__main__":
         sys.exit(1)
     
     
-    rawdata_dir = os.path.join(exec_dir, EXEC_DIRS["raw_data"])
+    rawdata_dir = os.path.join(exec_dir, common_exp_infos.EXEC_DIRS["raw_data"])
     if (not os.path.exists(rawdata_dir)) or len(os.listdir(rawdata_dir)) == 0:
         print  "\nRaw benchmark output files do not exist in %s" %  rawdata_dir
-        print "To generate them, execute the benchmark jobs in %s" % os.path.join(exec_dir, EXEC_DIRS["jobs"])
+        print "To generate them, execute the benchmark jobs in %s" % os.path.join(exec_dir, common_exp_infos.EXEC_DIRS["jobs"])
         sys.exit(1)
     
-    output_dir = os.path.join(exp_dir, EXEC_RESULTS_DIRS["alldata"])
+    output_dir = os.path.join(exp_dir, common_exp_infos.EXEC_RESULTS_DIRS["alldata"])
     file_helpers.create_local_dir(output_dir)
     output_file = os.path.join(output_dir, "data.txt")
     print(rawdata_dir)

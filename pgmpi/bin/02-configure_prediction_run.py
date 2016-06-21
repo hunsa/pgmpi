@@ -15,10 +15,10 @@ base_path = os.path.dirname( base_path )
 lib_path = os.path.join( base_path, "lib" )
 sys.path.append(lib_path)
 
-from mpiguidelines.helpers import file_helpers
+from mpiguidelines import file_helpers
 from mpiguidelines.benchmark import benchmarks
-from mpiguidelines.common_exp_infos import *
-from mpiguidelines.machine_setup import *  
+from mpiguidelines import common_exp_infos
+from mpiguidelines import machine_setup  
 
     
 
@@ -70,11 +70,11 @@ def create_job_file(expname, expconfig_data, benchmark, machine_configurator, pr
     pred_dir_name = os.path.basename(os.path.dirname(pred_job_dir))    
     remote_input_dir = os.path.join(
                           os.path.join(exp_output_dir, pred_dir_name),
-                                     PREDICTION_DIRS["input"]
+                                     common_exp_infos.PREDICTION_DIRS["input"]
                                      )
     remote_output_dir = os.path.join(
                                      os.path.join(exp_output_dir, pred_dir_name),
-                                     PREDICTION_DIRS["raw_data"]
+                                     common_exp_infos.PREDICTION_DIRS["raw_data"]
                                      )
         
     prediction_params = expconfig_data["prediction"]
@@ -156,20 +156,20 @@ if __name__ == "__main__":
         exp_base_dir = os.path.abspath(options.base_expdir)
     
     
-    exec_dir_name = expname + "_" + PREDICTION_BASEDIR
+    exec_dir_name = expname + "_" + common_exp_infos.PREDICTION_BASEDIR
     exp_dir = os.path.join(exp_base_dir, expname)
     assert os.path.isdir(exp_dir), "Cannot find experiment execution directory %s" % (exec_dir_name)
         
     exec_dir = os.path.join(exp_dir, exec_dir_name) 
-    exec_input_dir = os.path.join(exec_dir, PREDICTION_DIRS["input"])
-    exec_job_dir = os.path.join(exec_dir, PREDICTION_DIRS["jobs"])
+    exec_input_dir = os.path.join(exec_dir, common_exp_infos.PREDICTION_DIRS["input"])
+    exec_job_dir = os.path.join(exec_dir, common_exp_infos.PREDICTION_DIRS["jobs"])
         
     
     # load machine setup class from specified file    
     mach_conf_module = imp.load_source("machconf", options.machcode)   
     mach_class_list = []
     for name, cls in mach_conf_module.__dict__.items():
-        if isclass(cls) and issubclass(cls, PGMPIMachineConfigurator) and not issubclass(PGMPIMachineConfigurator, cls):
+        if isclass(cls) and issubclass(cls, machine_setup.PGMPIMachineConfigurator) and not issubclass(machine_setup.PGMPIMachineConfigurator, cls):
             mach_class_list.append(cls)
     
     if len(mach_class_list) == 0:

@@ -12,8 +12,8 @@ lib_path = os.path.join( base_path, "lib" )
 sys.path.append(lib_path)
 
 from optparse import OptionParser
-from mpiguidelines.helpers import file_helpers
-from mpiguidelines.common_exp_infos import *
+from mpiguidelines import file_helpers
+from mpiguidelines import common_exp_infos
 
 
 def get_nrep_predictions(pred_rawdata_dir):
@@ -88,7 +88,7 @@ if __name__ == "__main__":
     prediction_data = get_nrep_predictions(options.pred_rawdata_dir)
     
     assert len(prediction_data) > 0, "No prediction data found or incorrectly formatted. Generate prediction data first"  
-    output_file = os.path.join(options.pred_results_dir, PREDICTION_PROCESSED_OUTPUT_FILENAME)
+    output_file = os.path.join(options.pred_results_dir, common_exp_infos.PREDICTION_PROCESSED_OUTPUT_FILENAME)
     file_helpers.write_json_config_file(output_file, prediction_data)
 
     print("Prediction data summarized into the %s file" % output_file)
