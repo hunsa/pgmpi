@@ -24,11 +24,10 @@ class ReproMPI:
                   "MPI_Scan<MPI_Scan_with_MPI_Exscan_MPI_Reduce_local" : ["MPI_Scan", "GL_Scan_as_ExscanReducelocal"],
                   "MPI_Scatter<MPI_Scatter_with_MPI_Bcast" : ["MPI_Scatter", "GL_Scatter_as_Bcast"]
                   }
-    input_file_name = "input"
-    input_job_name = "job"
+    input_file_name = "input.txt"
 
-    def __init__(self, bench_info):
-        self.bench_info = bench_info
+    def __init__(self, bench_path):
+        self.bench_path = bench_path
 
 
     def translate_guideline(self, calls):
@@ -42,115 +41,49 @@ class ReproMPI:
         return translated
 
 
-    def generate_input_files(self, inputfiles_dir, runindex, run):
+    # format for input data: { function_name1: { msize1 : { "nreps" : 10},
+    #                                             msize2 : { "nreps" : 20},
+    #                                          },
+    #                          function_name2 ......
+    #                           }
+    def generate_input_files(self, inputfiles_dir, runindex, input_data):
         # create input files on the local machine
-        inputname = "%s_%d.txt" %  (self.input_file_name, runindex)
-        inputfile = os.path.join(inputfiles_dir, inputname)
+        inputfile = os.path.join(inputfiles_dir, self.input_file_name)
 
         with open(inputfile, "w") as f:
-            for call in run.keys():
-                test = run[call]
+            for call in input_data.keys():
+                test = input_data[call]
                 for msize in test.keys():
                     e = test[msize]
                     f.write( "%s %d %d\n" % (call, msize, e["nreps"]))
         return
 
 
-    def generate_and_write_job_files(self, jobs_dir, remote_input_dir, remote_output_dir, mpirun_call,
-                           nmpiruns, nodes, nnp, job_header, additional_bench_params = "", scratch_dir = ""):
+    def get_verification_bench_binary(self):
+        return os.path.join(self.bench_path, REPROMPI_BENCH_REL_PATH)
 
-        jobname = "%s.sh" %  (self.input_job_name)
-        jobfile = os.path.join(jobs_dir, jobname)
+    def get_prediction_bench_binary(self):
+        return os.path.join(self.bench_path, PREDICTION_BENCH_REL_PATH)
 
-        check_bench = ["if [ ! -f %s/%s ]; then " % (self.bench_info["bench_path"], REPROMPI_BENCH_REL_PATH), 
-                        "echo \"Benchmark path incorrect: %s/%s \" " % (self.bench_info["bench_path"], REPROMPI_BENCH_REL_PATH), 
-                        "fi"
-                        ]  
-
-        n_input_files = 1
-        with open(jobfile, "w") as f:
-            f.write(job_header)
-            f.write("\n".join(check_bench) + "\n")
-            f.write( "mkdir -p %s \n" % (remote_output_dir) )
-            f.write( "mkdir -p %s/logs \n" % (remote_output_dir) )
-            
-            for i in range(0, nmpiruns):
-                
-                # path to input/output files specified on the remote server
-                inputname = "%s_%d.txt" %  (self.input_file_name, n_input_files)
-                inputfile = os.path.join(remote_input_dir, inputname)
-
-                outname = "%s/mpi_bench_r%d.dat" % ( remote_output_dir, i)
-                outlogname = "%s/logs/mpi_bench_r%d.log" % ( remote_output_dir, i)
-                
-                f.write( "echo \"#@mpiargs=%s\" >> %s \n" %(mpirun_call, outname))
-                f.write( "echo \"#@nodes=%s\" >> %s \n" %(nodes, outname))
-                f.write( "echo \"#@nnp=%s\" >> %s \n" %(nnp, outname))
-                call = "%s %s/%s -f %s %s >> %s 2>> %s \n" \
-                           % ( mpirun_call, self.bench_info["bench_path"], REPROMPI_BENCH_REL_PATH, 
-                               inputfile, additional_bench_params, outname, outlogname)
-
-                f.write(call)
-                f.write("\n\n")
-
-
-
-    def generate_and_write_prediction_job_files(self, jobs_dir, remote_input_dir, remote_output_dir, mpirun_call,
-                           nodes, nnp, prediction_params, job_header, scratch_dir = ""):
-
-        jobname = "%s.sh" %  (self.input_job_name)
-        jobfile = os.path.join(jobs_dir, jobname)
+    def get_prediction_bench_args(self, bench_inputfile_dir, expconfig_data):
+        prediction_params = expconfig_data["prediction"]
         
-        assert(prediction_params["max"] > 0), "Specify a maximum number of repetitions for the nrep prediction algorithm"
-        for method in prediction_params["methods"]:
-            assert(method in ["rse", "cov_mean", "cov_median"]), "Specify a defined prediction method (one of res, cov_mean, cov_median)"
-        assert(len(prediction_params["thresholds"]) == len(prediction_params["methods"])), \
-                    "The number of thresholds has to match the number of specified prediction methods"
-        assert(len(prediction_params["windows"]) == len(prediction_params["methods"])),   \
-                    "The number of prediction windows has to match the number of specified prediction methods"
+        inputfile_path = os.path.join(bench_inputfile_dir, self.input_file_name)
         
-        prediction_bench_params = "--rep-prediction min=%d,max=%d,step=%d --pred-method=%s --var-thres=%s --var-win=%s" % ( 
+        prediction_bench_params = "-f %s --rep-prediction min=%d,max=%d,step=%d --pred-method=%s --var-thres=%s --var-win=%s" % ( 
+                                    inputfile_path,
                                     prediction_params["min"],
                                     prediction_params["max"], prediction_params["step"], 
                                     ",".join(prediction_params["methods"]),
                                     ",".join(map(str, prediction_params["thresholds"])),
                                     ",".join(map(str, prediction_params["windows"]))
                                     )
+        return prediction_bench_params
+    
 
-        check_bench = ["if [ ! -f %s/%s ]; then " % (self.bench_info["bench_path"], PREDICTION_BENCH_REL_PATH), 
-                        "echo \"Benchmark path incorrect: %s/%s \" " % (self.bench_info["bench_path"], PREDICTION_BENCH_REL_PATH),
-                        "exit 1",
-                        "fi"
-                        ]  
-
-        n_input_files = 1
-        with open(jobfile, "w") as f:
-            f.write(job_header)
-            f.write("\n".join(check_bench) + "\n")
-            f.write( "mkdir -p %s \n" % (remote_output_dir) )
-            f.write( "mkdir -p %s/logs \n" % (remote_output_dir) )
-            
-            for i in range(0, prediction_params["nmpiruns"]):
-                
-                # path to input/output files specified on the remote server
-                inputname = "%s_%d.txt" %  (self.input_file_name, n_input_files)
-                inputfile = os.path.join(remote_input_dir, inputname)
-
-                outname = "%s/mpi_bench_r%d.dat" % ( remote_output_dir, i)
-                outlogname = "%s/logs/mpi_bench_r%d.log" % ( remote_output_dir, i)
-                
-                f.write( "echo \"Starting mpirun %d...\" \n" %(i))
-                f.write( "echo \"#@mpiargs=%s\" > %s \n" %(mpirun_call, outname))
-                f.write( "echo \"#@nodes=%s\" >> %s \n" %(nodes, outname))
-                f.write( "echo \"#@nnp=%s\" >> %s \n" %(nnp, outname))
-                call = "%s %s/%s -f %s %s >> %s 2>> %s \n" \
-                           % ( mpirun_call, self.bench_info["bench_path"], PREDICTION_BENCH_REL_PATH,
-                               inputfile, prediction_bench_params, outname, outlogname)
-
-                f.write(call)
-                f.write( "echo \"Done.\" ")
-                f.write("\n\n")
-
-
-
+    def get_verification_bench_args(self, bench_inputfile_dir, expconfig_data):
+        inputfile_path = os.path.join(bench_inputfile_dir, self.input_file_name)
+        
+        bench_params = "-f %s" % (inputfile_path)
+        return bench_params
 

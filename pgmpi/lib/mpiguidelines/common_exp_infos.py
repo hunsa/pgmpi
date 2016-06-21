@@ -4,7 +4,7 @@
 
 PREDICTION_BASEDIR = "nrep_prediction_exp"
 PREDICTION_DIRS = {
-        "config" : "config",
+#        "config" : "config",
         "input" : "input_files",
         "jobs": "jobs",
         "raw_data": "raw_data"       

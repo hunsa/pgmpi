@@ -2,6 +2,7 @@
 
 import sys
 import os
+import shutil
 
 # in bin
 base_path = os.path.dirname( os.path.realpath( sys.argv[0] ) )
@@ -11,7 +12,56 @@ lib_path = os.path.join( base_path, "lib" )
 sys.path.append(lib_path)
 
 from optparse import OptionParser
-import mpiguidelines.exp_setup_generator as confgen
+from mpiguidelines.helpers import file_helpers
+from mpiguidelines.common_exp_infos import *
+#import mpiguidelines.exp_setup_generator as confgen
+
+
+    
+def create_exp_dir_structure(expname, exp_base_dir):
+    
+    exp_dir = os.path.join(exp_base_dir, expname)
+    ret = file_helpers.create_local_dir(exp_dir)
+    if not ret:
+        print ("Specify another experiment name or path to create a new experiment.\n")
+        sys.exit(1) 
+    
+    # create prediction directory tree
+    pred_dir_name = expname + "_" + PREDICTION_BASEDIR
+    pred_dir = os.path.join(exp_dir, pred_dir_name)
+    file_helpers.create_local_dir(pred_dir)
+    for d in PREDICTION_DIRS.values():
+        file_helpers.create_local_dir(os.path.join(pred_dir, d))
+    for d in PREDICTION_RESULTS_DIRS.values():
+        file_helpers.create_local_dir(os.path.join(pred_dir, d))
+    
+    # create experiment execution directory tree
+    exec_dir_name = expname + "_" + EXEC_BASEDIR
+    exec_dir = os.path.join(exp_dir, exec_dir_name)
+    file_helpers.create_local_dir(exec_dir)
+    for d in EXEC_DIRS.values():
+        file_helpers.create_local_dir(os.path.join(exec_dir, d))
+
+    # create experiment results directory tree
+    for d in EXEC_RESULTS_DIRS.values():
+        file_helpers.create_local_dir(os.path.join(exp_dir, d))
+
+
+    #create initial configuration directory
+    conf_dir = os.path.join(exp_dir, CONFIG_BASEDIR)
+    file_helpers.create_local_dir(conf_dir)
+    
+ 
+def create_init_config_files(expname, exp_base_dir, glconf, expconf, machconf):
+    exp_dir = os.path.join(exp_base_dir, expname)
+    assert os.path.isdir(exp_dir)
+    
+    shutil.copy(glconf, os.path.join(exp_dir, CONFIG_BASEDIR))
+    shutil.copy(expconf, os.path.join(exp_dir, CONFIG_BASEDIR))
+    shutil.copy(machconf, os.path.join(exp_dir, CONFIG_BASEDIR))
+    
+    
+    
 
 if __name__ == "__main__":
 
@@ -27,11 +77,11 @@ if __name__ == "__main__":
                        dest="expconf",
                        type="string",
                        help="path to exp config file")
-#     parser.add_option("-m", "--machconf",
-#                        action="store",
-#                        dest="machconf",
-#                        type="string",
-#                        help="path to machine/benchmark configuration file")
+    parser.add_option("-m", "--machconf",
+                        action="store",
+                        dest="machconf",
+                        type="string",
+                        help="path to machine/benchmark configuration file")
     parser.add_option("-n", "--expname",
                        action="store",
                        dest="expname",
@@ -76,13 +126,13 @@ if __name__ == "__main__":
         base_expdir = os.path.abspath(options.base_expdir)
 
 
-    confgen.create_exp_dir_structure(options.expname, base_expdir)
+    create_exp_dir_structure(options.expname, base_expdir)
+    create_init_config_files(options.expname, base_expdir, options.glconf, options.expconf, options.machconf)
 
-    confgen.create_init_config_files(options.expname, base_expdir, options.glconf, options.expconf, options.machconf)
 
-    data = confgen.generate_complete_exp_data(options.expname, base_expdir, options.glconf, options.expconf,
-                                              options.machconf, options.local_exec)
-    confgen.write_complete_exp_data(options.expname, base_expdir, data)
+    #data = confgen.generate_complete_exp_data(options.expname, base_expdir, options.glconf, options.expconf,
+    #                                          options.machconf, options.local_exec)
+    #confgen.write_complete_exp_data(options.expname, base_expdir, data)
 
 
 

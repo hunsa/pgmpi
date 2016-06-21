@@ -75,11 +75,5 @@ def read_cvs_file(filepath, fieldnames = None):
     return data
 
 
-def get_execution_dir(config_data):    
-    if config_data["exp_info"]["local_exec"]:
-        execution_dir = os.path.join(config_data["exp_info"]["exp_base_dir"], config_data["exp_name"])
-    else:
-        execution_dir = config_data["mach_info"]["remote_base_dir"]
-    return execution_dir
 
 
