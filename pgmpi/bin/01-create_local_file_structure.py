@@ -14,8 +14,6 @@ sys.path.append(lib_path)
 from optparse import OptionParser
 from mpiguidelines.helpers import file_helpers
 from mpiguidelines.common_exp_infos import *
-#import mpiguidelines.exp_setup_generator as confgen
-
 
     
 def create_exp_dir_structure(expname, exp_base_dir):
@@ -77,11 +75,11 @@ if __name__ == "__main__":
                        dest="expconf",
                        type="string",
                        help="path to exp config file")
-    parser.add_option("-m", "--machconf",
+    parser.add_option("-m", "--machcode",
                         action="store",
-                        dest="machconf",
+                        dest="machcode",
                         type="string",
-                        help="path to machine/benchmark configuration file")
+                        help="path to machine-specific class file")
     parser.add_option("-n", "--expname",
                        action="store",
                        dest="expname",
@@ -100,22 +98,22 @@ if __name__ == "__main__":
     (options, args) = parser.parse_args()
 
     if options.glconf == None or not os.path.exists(options.glconf):
-        print >> sys.stderr, "Guidelines configuration file invalid"
+        print >> sys.stderr, "ERROR: Guidelines configuration file invalid"
         parser.print_help()
         sys.exit(1)
 
     if options.expconf == None or not os.path.exists(options.expconf):
-        print >> sys.stderr, "Experiment configuration file invalid"
+        print >> sys.stderr, "ERROR: Experiment configuration file invalid"
         parser.print_help()
         sys.exit(1)
 
-    if options.machconf == None or not os.path.exists(options.machconf):
-        print >> sys.stderr, "Machine configuration file invalid"
+    if options.machcode == None or not os.path.exists(options.machcode):
+        print >> sys.stderr, "ERROR: Machine configuration file invalid"
         parser.print_help()
         sys.exit(1)
 
     if options.expname == None:
-        print >> sys.stderr, "Experiment name not specified"
+        print >> sys.stderr, "ERROR: Experiment name not specified"
         parser.print_help()
         sys.exit(1)
 
@@ -127,12 +125,7 @@ if __name__ == "__main__":
 
 
     create_exp_dir_structure(options.expname, base_expdir)
-    create_init_config_files(options.expname, base_expdir, options.glconf, options.expconf, options.machconf)
-
-
-    #data = confgen.generate_complete_exp_data(options.expname, base_expdir, options.glconf, options.expconf,
-    #                                          options.machconf, options.local_exec)
-    #confgen.write_complete_exp_data(options.expname, base_expdir, data)
+    create_init_config_files(options.expname, base_expdir, options.glconf, options.expconf, options.machcode)
 
 
 

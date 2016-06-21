@@ -1,14 +1,14 @@
 
 import os
 
-from machine_setup import PGMPIMachineConfigurator
+from mpiguidelines.machine_setup import PGMPIMachineConfigurator
 
 class PGMPIMachineConfiguratorLocal(PGMPIMachineConfigurator):
 
     mpirun_path = "mpirun"
     mpi_common_args = "-bind-to core"
 
-    exp_output_basedir = "test_cases/output/myexp4"
+    exp_output_basedir = "test_cases/output/myexp11"
 
     bench_info = {     
                   "bench_path" : "/Users/carpenamarie/Work/tuwien2014/code/mpibenchmark",
@@ -63,7 +63,7 @@ class PGMPIMachineConfiguratorLocal(PGMPIMachineConfigurator):
             outlogname = "%s/logs/mpi_bench_r%d.log" % ( results_output_dir, i)
                 
             mpirun_calls += [ "echo \"Starting mpirun %d...\" " %(i),
-                             "echo \"#@nodes=%s\" >> %s " % (nodes, outname),
+                             "echo \"#@nodes=%s\" > %s " % (nodes, outname),
                              "echo \"#@nnp=%s\" >> %s " % (nnp, outname),
                              "%s %s %s %s >> %s 2>> %s" % ( self.mpirun_path, mpirun_args, 
                                                                bench_binary_path, bench_args,

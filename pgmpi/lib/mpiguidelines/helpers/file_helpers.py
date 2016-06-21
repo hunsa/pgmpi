@@ -34,10 +34,11 @@ def write_json_config_file(filepath, data):
         print >> sys.stderr, "Cannot write data to file: %s" % filepath
         sys.exit(1)
   
-def write_to_dataframe(filepath, data):
+def write_guidelines_to_dataframe(filepath, data, header = None):
     try:
         with open(filepath, "w") as f:
-            f.write("guideline f1 f2\n")
+            if header:
+                f.write("%s\n" % header)
             for key in data.keys():
                 f.write("%s %s\n" % (key, " ".join(data[key])))
     except:

@@ -226,7 +226,7 @@ check_all_violations <- function(df, dfgl) {
   
   dfres <- data.frame()
   
-  for(func in unique(dfgl$f1)) {
+  for(func in unique(dfgl$orig)) {
     
     df1 <- df[df$test==func,]
     
@@ -234,14 +234,14 @@ check_all_violations <- function(df, dfgl) {
       
       loginfo(paste(func, nprocs, nnp))
       
-      # get all pattern guidelines (the ones that have a second function f2 defined)
-      dfpat <- dfgl[dfgl$f1==func & (!is.na(dfgl$f2)),]
-      if( nrow(dfpat) <= 0 ) { # no pattern guideline defined for this function f1
+      # get all pattern guidelines (the ones that have a second function mock and translated_mock defined)
+      dfpat <- dfgl[dfgl$orig==func & (!is.na(dfgl$translated_mock)),]
+      if( nrow(dfpat) <= 0 ) { # no pattern guideline defined for this function orig
         next
       }
       
       for(pat_idx in 1:nrow(dfpat)) {
-        pattern_func <- dfpat[pat_idx,]$f2
+        pattern_func <- dfpat[pat_idx,]$translated_mock
         pattern_str  <- as.character(dfpat[pat_idx,]$guideline)
 
         df2 <- df[df$test==pattern_func & df$nprocs==nprocs & df$nnp==nnp,]

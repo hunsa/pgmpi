@@ -12,7 +12,7 @@ lib_path = os.path.join( base_path, "lib" )
 sys.path.append(lib_path)
 
 from optparse import OptionParser
-from mpiguidelines.helpers import file_helpers as helpers
+from mpiguidelines.helpers import file_helpers
 from mpiguidelines.common_exp_infos import *
 
 
@@ -65,7 +65,7 @@ if __name__ == "__main__":
         sys.exit(1)
     
     output_dir = os.path.join(exp_dir, EXEC_RESULTS_DIRS["alldata"])
-    helpers.create_local_dir(output_dir)
+    file_helpers.create_local_dir(output_dir)
     output_file = os.path.join(output_dir, "data.txt")
     print(rawdata_dir)
     print (rscripts_dir)

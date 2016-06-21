@@ -12,7 +12,7 @@ lib_path = os.path.join( base_path, "lib" )
 sys.path.append(lib_path)
 
 from optparse import OptionParser
-import mpiguidelines.helpers.file_helpers as helpers
+from mpiguidelines.helpers import file_helpers
 from mpiguidelines.common_exp_infos import *
 
 
@@ -20,47 +20,41 @@ def get_nrep_predictions(pred_rawdata_dir):
     assert os.path.isdir(pred_rawdata_dir), "Cannot find prediction results directory %s. Please execute the prediction jobs first with ./bin/runPredictionJobs.py " % (pred_rawdata_dir)
 
     fieldnames=["test", "nrep", "msize", "last_runtime_sec", "pred_method", "pred_value"]
-    nrep_prediction_data = []
+    nrep_prediction_data = {}
     
     for f in os.listdir(pred_rawdata_dir):
         if f.endswith(".dat"):      
-            #try:
-                results = []
-                data = helpers.read_cvs_file(os.path.join(pred_rawdata_dir, f), fieldnames)
-                #pprint(data)
-                current_test = ""
-                for el in data:
-                    if current_test == el["test"]+el["msize"]:
-                        continue
-                    else:
-                        current_test = el["test"]+el["msize"]
+            data = file_helpers.read_cvs_file(os.path.join(pred_rawdata_dir, f), fieldnames)
+            current_test = None
+            for data_row in data:
+                if current_test == (data_row["test"], data_row["msize"]):
+                    continue    # skip this line, already read data for this (test,msize) tuple
+                else:
+                    current_test = (data_row["test"], data_row["msize"])
                 
-                    duplicate_el = [res for res in results if (res["test"] == el["test"] and res["msize"] == el["msize"]) ]
-                    if len(duplicate_el) > 0:
-                        continue # already have the results for this (test,msize) tuple
+                    if len(nrep_prediction_data) > 0 and current_test in nrep_prediction_data.keys():
+                        # already have the results for this (test,msize) tuple from a different file
+                        # add current nrep value
+                        test_data = nrep_prediction_data[current_test]
+                        test_data.append(int(data_row["nrep"]))
                     else:
-                        results.append({k: el[k] for k in ("test", "nrep", "msize")})
-                    
-                
-                for el in results:
-                    pred_values = [res for res in nrep_prediction_data if (res["test"] == el["test"] and res["msize"] == el["msize"]) ]
-                    #pprint("pred_values")
-                    #pprint(pred_values)
-                    if len(pred_values) == 1:
-                        pred_values[0]["nrep"].append( int(el["nrep"]) )
-                    elif len(pred_values) == 0:
-                        el["nrep"] = [int(el["nrep"])]
+                        # create nrep record for the current test
+                        nrep_prediction_data[current_test] = [int(data_row["nrep"])] 
                         
-                        nrep_prediction_data.append(el)
-                    else:
-                        print("An error occurred. Check configuration files")
-                        exit(1)
-       
-    for test in nrep_prediction_data:
-        test["max_nrep"] = max(test["nrep"])
-        print("[%s][msize=%s] Setting max_nrep=%d (from prediction list %s)" % (test["test"], test["msize"], test["max_nrep"], test["nrep"]))
+    # reformat data into a json-compatible structure
+    # replace list of nreps with the maximum value for each (test, msize) tuple
+    nrep_prediction_list = []
+    for test in nrep_prediction_data.keys():
+        maxnreps = max(nrep_prediction_data[test])
+        print("[%s][msize=%s] Setting max_nrep=%d " % (test[0], test[1], maxnreps))
         
-    return nrep_prediction_data
+        nrep_prediction_list.append({
+                                     "test" : test[0],
+                                     "msize": test[1],
+                                     "max_nrep": maxnreps
+                                    })
+        
+    return nrep_prediction_list
 
 
 if __name__ == "__main__":
@@ -81,11 +75,11 @@ if __name__ == "__main__":
     (options, args) = parser.parse_args()
 
     if options.pred_rawdata_dir == None:
-        print >> sys.stderr, "Prediction raw data directory does not exist. Please create it by running nrep prediction jobs."
+        print >> sys.stderr, "ERROR: Prediction raw data directory does not exist. Please create it by running the nrep prediction jobs."
         parser.print_help()
         sys.exit(1)
     if options.pred_results_dir == None:
-        print >> sys.stderr, "Prediction output directory does not exist."
+        print >> sys.stderr, "ERROR: Prediction output directory does not exist."
         parser.print_help()
         sys.exit(1)
         
@@ -95,7 +89,7 @@ if __name__ == "__main__":
     
     assert len(prediction_data) > 0, "No prediction data found or incorrectly formatted. Generate prediction data first"  
     output_file = os.path.join(options.pred_results_dir, PREDICTION_PROCESSED_OUTPUT_FILENAME)
-    helpers.write_json_config_file(output_file, prediction_data)
+    file_helpers.write_json_config_file(output_file, prediction_data)
 
     print("Prediction data summarized into the %s file" % output_file)
 

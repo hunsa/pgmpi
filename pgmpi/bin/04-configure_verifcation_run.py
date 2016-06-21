@@ -14,12 +14,15 @@ base_path = os.path.dirname( base_path )
 lib_path = os.path.join( base_path, "lib" )
 sys.path.append(lib_path)
 
-from mpiguidelines.common_exp_infos import *
-import mpiguidelines.helpers.file_helpers as helpers
-from mpiguidelines.machine_setup import *   
+from mpiguidelines.helpers import file_helpers
 from mpiguidelines.benchmark import benchmarks
+from mpiguidelines.common_exp_infos import *
+from mpiguidelines.machine_setup import *  
 
-def create_input_file(glconfig_data, pred_info, benchmark, exec_input_dir, max_nrep = 0):
+MAX_NREPS = 1000
+
+
+def create_input_file(glconfig_data, pred_data, benchmark, exec_input_dir, max_nrep = 0):
     
     assert os.path.isdir(exec_input_dir)
     print "Generating input data in %s..." % exec_input_dir
@@ -31,30 +34,39 @@ def create_input_file(glconfig_data, pred_info, benchmark, exec_input_dir, max_n
             bench_funcs.append(guideline["orig"])
         if "mock" in guideline:
             bench_funcs.append(guideline["mock"])
+            
         for bench_func in bench_funcs:
             for msize in guideline["msizes"]:   
                 run = {}
-                if "bench_func" in tests.keys():
-                    run = tests[bench_func]
+                translated_func_name = benchmark.translate_name(bench_func)
+                
+                if translated_func_name in tests.keys():
+                    run = tests[translated_func_name]
                     
                 if not msize in run.keys():
-                    pred_values = [res for res in pred_info if (res["test"] == bench_func and int(res["msize"]) == msize) ]
-                    #pprint(pred_values)
-                    if len(pred_values) == 1:
-                        run[msize] = {
-                                      "nreps": pred_values[0]["max_nrep"]
-                                      } 
-                    else:
-                        run[msize] = {
-                                      "nreps": max_nrep
-                                      }                   
-                tests[bench_func] = run
-    
+                    # default value for nreps
+                    run[msize] = {  
+                                "nreps": max_nrep
+                                 }   
+                    
+                    if pred_data:
+                        pred_values = [] 
+                        for res in pred_data:
+                            if res["test"] == translated_func_name and int(res["msize"]) == msize:
+                                pred_values.append(res)
+                                
+                        # replace nreps with predicted value if it exists for the current msize
+                        if len(pred_values) > 0:
+                            run[msize] = {
+                                          "nreps": pred_values[0]["max_nrep"]
+                                          }                      
+                tests[translated_func_name] = run
+                
     benchmark.generate_input_files(exec_input_dir, 1, tests)    
     print "Done."
 
 
-def create_job_file(exp_name, expconfig_data, benchmark, machine_configurator, exp_job_dir):
+def create_job_file(expconfig_data, benchmark, machine_configurator, exp_job_dir):
         
     print "Generating job files in %s..." % exp_job_dir
     
@@ -104,11 +116,11 @@ if __name__ == "__main__":
                        dest="expconf",
                        type="string",
                        help="path to exp config file")
-    parser.add_option("-m", "--machconf",
+    parser.add_option("-m", "--machcode",
                         action="store",
-                        dest="machconf",
+                        dest="machcode",
                         type="string",
-                        help="path to machine/benchmark configuration file")
+                        help="path to machine-specific class file")
     parser.add_option("-p", "--predfile",
                        action="store",
                        dest="predfile",
@@ -119,41 +131,38 @@ if __name__ == "__main__":
 
 
     if options.glconf == None or not os.path.exists(options.glconf):
-        print >> sys.stderr, "Guidelines configuration file invalid"
+        print >> sys.stderr, "ERROR: Guidelines configuration file invalid"
         parser.print_help()
         sys.exit(1)
 
     if options.expconf == None or not os.path.exists(options.expconf):
-        print >> sys.stderr, "Experiment configuration file invalid"
+        print >> sys.stderr, "ERROR: Experiment configuration file invalid"
         parser.print_help()
         sys.exit(1)
 
-    if options.machconf == None or not os.path.exists(options.machconf):
-        print >> sys.stderr, "Machine configuration file invalid"
+    if options.machcode == None or not os.path.exists(options.machcode):
+        print >> sys.stderr, "ERROR: Machine class file invalid"
         parser.print_help()
         sys.exit(1)
     
     if options.predfile == None:
-        print >> sys.stderr, "Prediction output data file not specified"
+        print >> sys.stderr, "ERROR: Prediction output data file not specified"
         parser.print_help()
         sys.exit(1)
     
     if options.expname == None:
-        print >> sys.stderr, "Experiment name not specified"
+        print >> sys.stderr, "ERROR: Experiment name not specified"
         parser.print_help()
         sys.exit(1)
     expname = options.expname
 
     if options.base_expdir == None:
-        print >> sys.stderr, "Experiment directory does not exist. Please create it using the ./bin/setupExp script"
+        print >> sys.stderr, "ERROR: Experiment directory does not exist. Please create it using the ./bin/setupExp script"
         parser.print_help()
         sys.exit(1)
     else:
         exp_base_dir = os.path.abspath(options.base_expdir)
   
-
-#    expgen.initialize_config_files(expname, exp_base_dir)
-    
     
     exec_dir_name = expname + "_" + EXEC_BASEDIR
     exp_dir = os.path.join(exp_base_dir, expname)
@@ -162,42 +171,49 @@ if __name__ == "__main__":
     exec_dir = os.path.join(exp_dir, exec_dir_name) 
     exec_input_dir = os.path.join(exec_dir, EXEC_DIRS["input"])
     exec_job_dir = os.path.join(exec_dir, EXEC_DIRS["jobs"])
-    execconfig_dir = os.path.join(exec_dir, EXEC_DIRS["config"])
+    #execconfig_dir = os.path.join(exec_dir, EXEC_DIRS["config"])
     
+    
+    # load configuration files
+    glconfig_data = file_helpers.read_json_config_file(options.glconf)
+    expconfig_data = file_helpers.read_json_config_file(options.expconf)
+    
+    # load prediction results
+    prediction_data = None
     if options.predfile != None and os.path.exists(options.predfile):
-        shutil.copy(options.predfile, execconfig_dir)
-        prediction_data = helpers.read_json_config_file(options.predfile)
-        
-    max_nrep = 0
-    if options.predfile == None or len(prediction_data) == 0:
-        try:
-            prediction_cfg = config_data["exp_info"]["prediction"]
-            try:
+    #    shutil.copy(options.predfile, execconfig_dir)
+        prediction_data = file_helpers.read_json_config_file(options.predfile)
+    
+    max_nrep = MAX_NREPS
+    if options.predfile == None or prediction_data == None or len(prediction_data) == 0:
+        # retrieve max nrep from the initial experiment configuration
+        if "prediction" in expconfig_data:
+            prediction_cfg = expconfig_data["prediction"]
+            if "max" in prediction_cfg:
                 max_nrep = prediction_cfg["max"]
-            except KeyError:
-                print >> sys.stderr, "No maximum nrep value specified in the configuration file %s." % (config_file_name)
-                max_nrep = 1000
-        except KeyError:
-            print >> sys.stderr, "No prediction data specified in configuration file %s." % (config_file_name)
-            max_nrep = 1000
-
+            else:
+                print >> sys.stderr, "No maximum nrep value specified in the configuration file %s." % (options.expconf)
+                max_nrep = MAX_NREPS
+        else:
+            print >> sys.stderr, "No prediction data specified in configuration file %s." % (options.expconf)
+            max_nrep = MAX_NREPS
         print >> sys.stderr, "Warning: no prediction data found or incorrectly formatted. Using the predefined maximum runs %d" % (max_nrep)   
 
      
     # load machine setup class from specified file    
-    mach_conf_module = imp.load_source("machconf", options.machconf)   
+    mach_conf_module = imp.load_source("machconf", options.machcode)   
     mach_class_list = []
     for name, cls in mach_conf_module.__dict__.items():
         if isclass(cls) and issubclass(cls, PGMPIMachineConfigurator) and not issubclass(PGMPIMachineConfigurator, cls):
             mach_class_list.append(cls)
     
     if len(mach_class_list) == 0:
-        print >> sys.stderr, "Cannot load machine configuration class from: %s" % options.machconf 
+        print >> sys.stderr, "ERROR: Cannot load machine configuration class from: %s" % options.machcode 
         parser.print_help()
         sys.exit(1)
     
     if len(mach_class_list) > 1:
-        print >> sys.stderr, "Multiple machine configuration classes found in: %s" % options.machconf 
+        print >> sys.stderr, "ERROR: Multiple machine configuration classes found in: %s" % options.machcode 
         parser.print_help()
         sys.exit(1)    
    
@@ -205,13 +221,9 @@ if __name__ == "__main__":
     try:
         machine_configurator = mach_class_list[0]()
     except Exception, err:
-        print 'ERROR: Cannot instantiate class defined in %s: \n' % options.machconf, str(err)
+        print 'ERROR: Cannot instantiate class defined in %s: \n' % options.machcode, str(err)
         exit(1)
     
-    
-    
-    glconfig_data = helpers.read_json_config_file(options.glconf)
-    expconfig_data = helpers.read_json_config_file(options.expconf)
     
     bench_path  = machine_configurator.get_bench_path()
     bench_type  = machine_configurator.get_bench_type()
@@ -219,7 +231,7 @@ if __name__ == "__main__":
     
     
     create_input_file(glconfig_data, prediction_data, benchmark, exec_input_dir, max_nrep)
-    create_job_file(expname, expconfig_data, benchmark, machine_configurator, exec_job_dir)
+    create_job_file(expconfig_data, benchmark, machine_configurator, exec_job_dir)
 
     
     
