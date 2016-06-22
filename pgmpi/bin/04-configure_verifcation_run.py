@@ -2,10 +2,7 @@
 
 import sys
 import os
-import shutil
-import imp
 from optparse import OptionParser
-from inspect import isclass
 
 # in bin
 base_path = os.path.dirname( os.path.realpath( sys.argv[0] ) )
@@ -17,16 +14,12 @@ sys.path.append(lib_path)
 from mpiguidelines import file_helpers
 from mpiguidelines.benchmark import benchmarks
 from mpiguidelines import common_exp_infos
-from mpiguidelines import machine_setup  
 
 MAX_NREPS = 1000
 
 
-def create_input_file(glconfig_data, pred_data, benchmark, exec_input_dir, max_nrep = 0):
+def format_input_data(glconfig_data, pred_data, max_nrep = 0):
     
-    assert os.path.isdir(exec_input_dir)
-    print "Generating input data in %s..." % exec_input_dir
-
     tests = {}
     for guideline in glconfig_data:
         bench_funcs = []
@@ -38,10 +31,9 @@ def create_input_file(glconfig_data, pred_data, benchmark, exec_input_dir, max_n
         for bench_func in bench_funcs:
             for msize in guideline["msizes"]:   
                 run = {}
-                translated_func_name = benchmark.translate_name(bench_func)
                 
-                if translated_func_name in tests.keys():
-                    run = tests[translated_func_name]
+                if bench_func in tests.keys():
+                    run = tests[bench_func]
                     
                 if not msize in run.keys():
                     # default value for nreps
@@ -52,7 +44,7 @@ def create_input_file(glconfig_data, pred_data, benchmark, exec_input_dir, max_n
                     if pred_data:
                         pred_values = [] 
                         for res in pred_data:
-                            if res["test"] == translated_func_name and int(res["msize"]) == msize:
+                            if res["test"] == bench_func and int(res["msize"]) == msize:
                                 pred_values.append(res)
                                 
                         # replace nreps with predicted value if it exists for the current msize
@@ -60,21 +52,16 @@ def create_input_file(glconfig_data, pred_data, benchmark, exec_input_dir, max_n
                             run[msize] = {
                                           "nreps": pred_values[0]["max_nrep"]
                                           }                      
-                tests[translated_func_name] = run
-                
-    benchmark.generate_input_files(exec_input_dir, 1, tests)    
-    print "Done."
+                tests[bench_func] = run
+    return tests
 
 
-def create_job_file(expname, expconfig_data, benchmark, machine_configurator, exp_job_dir):
-        
-    print "Generating job files in %s..." % exp_job_dir
-    
-    exp_output_basedir = machine_configurator.get_exp_output_dir()
-    exp_output_dir = os.path.join(exp_output_basedir, expname)
-        
+
+def generate_remote_exp_dirs(expname, remote_output_basedir):           
     # input/output directories on the remote server to set inside the job files
-    exp_dirname = os.path.basename(os.path.dirname(exp_job_dir))
+    exp_output_dir = os.path.join(remote_output_basedir, expname)
+    
+    exp_dirname = expname + "_" + common_exp_infos.EXEC_BASEDIR
     remote_input_dir = os.path.join(
                           os.path.join(exp_output_dir, exp_dirname),
                                      common_exp_infos.EXEC_DIRS["input"]
@@ -83,12 +70,11 @@ def create_job_file(expname, expconfig_data, benchmark, machine_configurator, ex
                                      os.path.join(exp_output_dir, exp_dirname),
                                      common_exp_infos.EXEC_DIRS["raw_data"]
                                      )
-     
-    bench_args = benchmark.get_verification_bench_args(remote_input_dir, expconfig_data)
-    bench_binary = benchmark.get_verification_bench_binary()
-    
-    machine_configurator.create_jobs(expconfig_data, bench_binary, bench_args, remote_output_dir, exp_job_dir)
-    print "Done."   
+    remote_jobs_dir = os.path.join(
+                                     os.path.join(exp_output_dir, exp_dirname),
+                                     common_exp_infos.EXEC_DIRS["jobs"]
+                                     )  
+    return (remote_input_dir, remote_output_dir, remote_jobs_dir)
     
     
 
@@ -170,8 +156,8 @@ if __name__ == "__main__":
     assert os.path.isdir(exp_dir), "Cannot find experiment execution directory %s" % (exec_dir_name)
         
     exec_dir = os.path.join(exp_dir, exec_dir_name) 
-    exec_input_dir = os.path.join(exec_dir, common_exp_infos.EXEC_DIRS["input"])
-    exec_job_dir = os.path.join(exec_dir, common_exp_infos.EXEC_DIRS["jobs"])
+    exec_input_files_dir = os.path.join(exec_dir, common_exp_infos.EXEC_DIRS["input"])
+    exec_job_files_dir = os.path.join(exec_dir, common_exp_infos.EXEC_DIRS["jobs"])
     
     # load configuration files
     glconfig_data = file_helpers.read_json_config_file(options.glconf)
@@ -199,38 +185,31 @@ if __name__ == "__main__":
         print >> sys.stderr, "Warning: no prediction data found or incorrectly formatted. Using the predefined maximum runs %d" % (max_nrep)   
 
      
-    # load machine setup class from specified file    
-    mach_conf_module = imp.load_source("machconf", options.machcode)   
-    mach_class_list = []
-    for name, cls in mach_conf_module.__dict__.items():
-        if isclass(cls) and issubclass(cls, machine_setup.PGMPIMachineConfigurator) and not issubclass(machine_setup.PGMPIMachineConfigurator, cls):
-            mach_class_list.append(cls)
-    
-    if len(mach_class_list) == 0:
-        print >> sys.stderr, "ERROR: Cannot load machine configuration class from: %s" % options.machcode 
-        parser.print_help()
-        sys.exit(1)
-    
-    if len(mach_class_list) > 1:
-        print >> sys.stderr, "ERROR: Multiple machine configuration classes found in: %s" % options.machcode 
-        parser.print_help()
-        sys.exit(1)    
-   
-    # instantiate class
-    try:
-        machine_configurator = mach_class_list[0]()
-    except Exception, err:
-        print 'ERROR: Cannot instantiate class defined in %s: \n' % options.machcode, str(err)
-        exit(1)
+     
+     
+    machine_configurator = file_helpers.instantiate_class_from_file(options.machcode)
+    machine_configurator.setup_benchmark(benchmarks.BenchmarkGenerator())
+    benchmark = machine_configurator.get_benchmark()
+
+
+    assert os.path.isdir(exec_input_files_dir)
+    print "Generating (local) input data in %s..." % exec_input_files_dir
+    tests = format_input_data(glconfig_data, prediction_data, max_nrep)
+    benchmark.generate_input_files(tests, exec_input_files_dir)
+    print "Done."
     
     
-    bench_path  = machine_configurator.get_bench_path()
-    bench_type  = machine_configurator.get_bench_type()
-    benchmark = benchmarks.BENCHMARKS[bench_type](bench_path)
     
+    print "Generating job files in %s..." % exec_job_files_dir
+    remote_output_basedir = machine_configurator.get_exp_output_dir()
+    (remote_input_dir, remote_output_dir, remote_job_dir) = generate_remote_exp_dirs(expname, remote_output_basedir)
     
-    create_input_file(glconfig_data, prediction_data, benchmark, exec_input_dir, max_nrep)
-    create_job_file(expname, expconfig_data, benchmark, machine_configurator, exec_job_dir)
+    machine_configurator.create_verification_jobs(expconfig_data, remote_input_dir, remote_output_dir, exec_job_files_dir)
+    print "Done." 
+    
+    print "--------------------"
+    print "To run the generated jobs, copy the entire experiment from %s to the target machine (in %s) and execute the jobs from %s. " % (exp_dir, remote_output_basedir, remote_job_dir)
+
 
     
     

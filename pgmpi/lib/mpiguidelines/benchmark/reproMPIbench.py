@@ -6,7 +6,7 @@ REPROMPI_BENCH_REL_PATH = "mpibenchmark"
 
 class ReproMPI:
     
-    mockup_functions = {"MPI_Allgather_with_MPI_Alltoall" : "GL_Allgather_as_Alltoall",
+    __mockup_functions = {"MPI_Allgather_with_MPI_Alltoall" : "GL_Allgather_as_Alltoall",
                   "MPI_Allgather_with_MPI_Allreduce" : "GL_Allgather_as_Allreduce",
                   "MPI_Allgather_with_MPI_Gather_MPI_Bcast" :  "GL_Allgather_as_GatherBcast",
                   "MPI_Allreduce_with_MPI_Reduce_MPI_Bcast" : "GL_Allreduce_as_ReduceBcast",
@@ -26,15 +26,12 @@ class ReproMPI:
                   }
     
     
-    input_file_name = "input.txt"
+    __input_file_name = "input.txt"
 
-    def __init__(self, bench_path):
-        self.bench_path = bench_path
 
     def translate_name(self, call):
-        if call in self.mockup_functions:
-            return self.mockup_functions[call]
-        
+        if call in self.__mockup_functions:
+            return self.__mockup_functions[call]   
         return call
 
 
@@ -43,29 +40,29 @@ class ReproMPI:
     #                                          },
     #                          function_name2 ......
     #                           }
-    def generate_input_files(self, inputfiles_dir, runindex, input_data):
+    def generate_input_files(self, input_data, inputfiles_dir):
         # create input files on the local machine
-        inputfile = os.path.join(inputfiles_dir, self.input_file_name)
+        inputfile = os.path.join(inputfiles_dir, self.__input_file_name)
 
         with open(inputfile, "w") as f:
             for call in input_data.keys():
                 test = input_data[call]
                 for msize in test.keys():
                     e = test[msize]
-                    f.write( "%s %d %d\n" % (call, msize, e["nreps"]))
-        return
+                    translated_name = self.translate_name(call)
+                    f.write( "%s %d %d\n" % (translated_name, msize, e["nreps"]))
 
 
-    def get_verification_bench_binary(self):
-        return os.path.join(self.bench_path, REPROMPI_BENCH_REL_PATH)
+    def get_verification_bench_binary(self, bench_path):
+        return os.path.join(bench_path, REPROMPI_BENCH_REL_PATH)
 
-    def get_prediction_bench_binary(self):
-        return os.path.join(self.bench_path, PREDICTION_BENCH_REL_PATH)
+    def get_prediction_bench_binary(self, bench_path):
+        return os.path.join(bench_path, PREDICTION_BENCH_REL_PATH)
 
     def get_prediction_bench_args(self, bench_inputfile_dir, expconfig_data):
         prediction_params = expconfig_data["prediction"]
         
-        inputfile_path = os.path.join(bench_inputfile_dir, self.input_file_name)
+        inputfile_path = os.path.join(bench_inputfile_dir, self.__input_file_name)
         
         prediction_bench_params = "-f %s --rep-prediction min=%d,max=%d,step=%d --pred-method=%s --var-thres=%s --var-win=%s" % ( 
                                     inputfile_path,
@@ -79,7 +76,7 @@ class ReproMPI:
     
 
     def get_verification_bench_args(self, bench_inputfile_dir, expconfig_data):
-        inputfile_path = os.path.join(bench_inputfile_dir, self.input_file_name)
+        inputfile_path = os.path.join(bench_inputfile_dir, self.__input_file_name)
         
         bench_params = "-f %s" % (inputfile_path)
         return bench_params

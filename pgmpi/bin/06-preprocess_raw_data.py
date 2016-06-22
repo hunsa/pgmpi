@@ -3,8 +3,6 @@
 import sys
 import os
 import subprocess
-import imp
-from inspect import isclass
 
 # in bin
 base_path = os.path.dirname( os.path.realpath( sys.argv[0] ) )
@@ -16,7 +14,6 @@ sys.path.append(lib_path)
 from optparse import OptionParser
 from mpiguidelines import file_helpers
 from mpiguidelines import common_exp_infos
-from mpiguidelines import machine_setup 
 from mpiguidelines.benchmark import benchmarks
 
 def get_guidelines(exp_data, benchmark):
@@ -90,31 +87,6 @@ if __name__ == "__main__":
         base_expdir = os.path.abspath(options.base_expdir)
 
 
-    # load machine setup class from specified file    
-    mach_conf_module = imp.load_source("machconf", options.machcode)   
-    mach_class_list = []
-    for name, cls in mach_conf_module.__dict__.items():
-        if isclass(cls) and issubclass(cls, machine_setup.PGMPIMachineConfigurator) and not issubclass(machine_setup.PGMPIMachineConfigurator, cls):
-            mach_class_list.append(cls)
-    
-    if len(mach_class_list) == 0:
-        print >> sys.stderr, "ERROR: Cannot load machine configuration class from: %s" % options.machcode 
-        parser.print_help()
-        sys.exit(1)
-    
-    if len(mach_class_list) > 1:
-        print >> sys.stderr, "ERROR: Multiple machine configuration classes found in: %s" % options.machcode 
-        parser.print_help()
-        sys.exit(1)    
-   
-    # instantiate class
-    try:
-        machine_configurator = mach_class_list[0]()
-    except Exception, err:
-        print 'ERROR: Cannot instantiate class defined in %s: \n' % options.machcode, str(err)
-        exit(1)
-
-
     rscripts_dir = os.path.join(lib_path, common_exp_infos.SCRIPT_DIRS["rscripts"])
     exp_dir = os.path.abspath(os.path.join(base_expdir, options.expname))
     
@@ -140,10 +112,10 @@ if __name__ == "__main__":
         sys.exit(1)
    
 
-    # instantiate benchmark   
-    bench_path  = machine_configurator.get_bench_path()
-    bench_type  = machine_configurator.get_bench_type()
-    benchmark = benchmarks.BENCHMARKS[bench_type](bench_path)
+     
+    machine_configurator = file_helpers.instantiate_class_from_file(options.machcode)
+    machine_configurator.setup_benchmark(benchmarks.BenchmarkGenerator())
+    benchmark = machine_configurator.get_benchmark()
 
     
     # get guidelines

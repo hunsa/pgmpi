@@ -4,7 +4,11 @@ import os
 import sys
 import csv
 from datetime import datetime 
+import imp
+import inspect
+from inspect import isclass
 
+from mpiguidelines import machine_setup 
 
 def create_local_dir(dirpath):
     if not os.path.exists(dirpath):
@@ -76,5 +80,33 @@ def read_cvs_file(filepath, fieldnames = None):
     return data
 
 
+
+
+def instantiate_class_from_file(class_path):
+    # load machine setup class from specified file    
+    mach_conf_module = imp.load_source("machconf", class_path)   
+    mach_class_list = []
+    for name, cls in mach_conf_module.__dict__.items():
+        if isclass(cls) and issubclass(cls, machine_setup.PGMPIMachineConfigurator) and not issubclass(machine_setup.PGMPIMachineConfigurator, cls):
+            mach_class_list.append(cls)
+    
+    if len(mach_class_list) == 0:
+        print >> sys.stderr, "Cannot load machine configuration class from: %s" % class_path
+        sys.exit(1)
+    
+    if len(mach_class_list) > 1:
+        print >> sys.stderr, "Multiple machine configuration classes found in: %s" % class_path
+        sys.exit(1)    
+    
+    # instantiate machine setup  class
+    try:
+        machine_configurator = mach_class_list[0]()
+    except Exception, err:
+        print 'ERROR: Cannot instantiate class defined in %s: \n' % class_path, str(err)
+        exit(1)
+
+    return machine_configurator
+    
+    
 
 
