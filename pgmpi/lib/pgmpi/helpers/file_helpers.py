@@ -82,20 +82,20 @@ def read_cvs_file(filepath, fieldnames = None):
 
 
 
-def instantiate_class_from_file(class_path):
+def instantiate_class_from_file(class_path, parent_class):
     # load machine setup class from specified file    
     mach_conf_module = imp.load_source("machconf", class_path)   
     mach_class_list = []
     for name, cls in mach_conf_module.__dict__.items():
-        if isclass(cls) and issubclass(cls, machine_setup.PGMPIMachineConfigurator) and not issubclass(machine_setup.PGMPIMachineConfigurator, cls):
+        if isclass(cls) and issubclass(cls, parent_class) and not issubclass(parent_class, cls):
             mach_class_list.append(cls)
     
     if len(mach_class_list) == 0:
-        print >> sys.stderr, "Cannot load machine configuration class from: %s" % class_path
+        print >> sys.stderr, "Cannot load configuration class from: %s" % class_path
         sys.exit(1)
     
     if len(mach_class_list) > 1:
-        print >> sys.stderr, "Multiple machine configuration classes found in: %s" % class_path
+        print >> sys.stderr, "Multiple configuration classes found in: %s" % class_path
         sys.exit(1)    
     
     # instantiate machine setup  class
