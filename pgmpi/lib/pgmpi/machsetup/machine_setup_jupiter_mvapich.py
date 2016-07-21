@@ -3,11 +3,11 @@ import os
 
 from pgmpi.machsetup.machine_setup import PGMPIMachineConfigurator
 
-class PGMPIMachineConfiguratorLocal(PGMPIMachineConfigurator):
+class PGMPIMachineConfiguratorJupiterMVAPICH(PGMPIMachineConfigurator):
 
-    __mpirun_path = "mpirun"
-    __mpi_common_args = "-bind-to core"
-        
+    __mpirun_path = "/opt/mvapich2-2.1/bin/mpirun"
+    __mpi_common_args = "-bind-to rr"
+    __machinefile = "/home/carpenamarie/code/mpibenchmark/machinefileJupiter"
     
     def generate_prediction_job_contents(self, expconf, bench_binary_path, bench_args, remote_output_dir):
         nmpiruns = expconf.get_prediction_nmpiruns()
@@ -65,7 +65,7 @@ class PGMPIMachineConfiguratorLocal(PGMPIMachineConfigurator):
 
 
     def __get_mpi_args(self, nodes, nnp):
-        return "-np %s -ppn %s %s" % (nodes * nnp, nnp, self.__mpi_common_args)   
+        return "-np %s -ppn %s -machinefile %s %s" % (nodes * nnp, nnp, self.__machinefile, self.__mpi_common_args)   
 
 
 

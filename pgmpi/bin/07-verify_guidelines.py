@@ -3,7 +3,6 @@
 import sys
 import os
 import subprocess
-
 from optparse import OptionParser
 
 # in bin
@@ -13,48 +12,38 @@ base_path = os.path.dirname( base_path )
 lib_path = os.path.join( base_path, "lib" )
 sys.path.append(lib_path)
 
-from mpiguidelines import common_exp_infos
+
+from pgmpi.helpers import file_helpers
+from pgmpi.glexp_desc.abs_exp_desc import AbstractExpDescription  
+from pgmpi.helpers import common_exp_infos
+
 
 if __name__ == "__main__":
 
     parser = OptionParser(usage="usage: %prog [options]")
-
-    parser.add_option("-n", "--expname",
+    
+    parser.add_option("-i", "--expfile",
                        action="store",
-                       dest="expname",
+                       dest="expfile",
                        type="string",
-                       help="unique experiment name")
-    parser.add_option("-d", "--expdir",
-                       action="store",
-                       dest="base_expdir",
-                       type="string",
-                       help="path to local experiment directory")
+                       help="experiment input file")
+    
     
     (options, args) = parser.parse_args()
-    
-    if options.expname == None:
-        print >> sys.stderr, "Experiment name not specified"
+
+    if options.expfile == None or not os.path.exists(options.expfile):
+        print >> sys.stderr, "ERROR: Experiment setup file not specified or does not exist"
         parser.print_help()
         sys.exit(1)
-
-    if options.base_expdir == None:
-        base_expdir = os.path.abspath(base_path)
-        print  "Warning: Experiment directory not specified. Using current directory %s\n" %  base_path
-    else:
-        base_expdir = os.path.abspath(options.base_expdir)
+        
+    exp_configurator = file_helpers.instantiate_class_from_file(options.expfile, AbstractExpDescription)
+    experiment = exp_configurator.setup_exp()
 
 
     rscripts_dir = os.path.join(lib_path, common_exp_infos.SCRIPT_DIRS["rscripts"])
-    exp_dir = os.path.abspath(os.path.join(base_expdir, options.expname))
-    
-    if not (os.path.exists(exp_dir) and os.path.isdir(exp_dir)):
-        print  "Experiment directory does not exist: %s\n" %  exp_dir
-        sys.exit(1)
-    
-    
-    # find output dir
-    summary_dir = os.path.join(exp_dir, common_exp_infos.EXEC_RESULTS_DIRS["summary"])
-    
+    summary_dir = experiment.get_local_verif_processed_dir()
+
+        
     if not (os.path.exists(summary_dir)):
         print  "\nSummarized results do not exist: %s\n" %  summary_dir
         print "Run the ./pgmpi/bin/summarizeData.py script first."
@@ -62,11 +51,13 @@ if __name__ == "__main__":
     
 
     print("\n------------------------------------------------------------")
-    print("\nThe following performance guideline violations have been found in %s:\n" % options.expname)
+    print("\nThe following performance guideline violations have been found:\n" )
+    
+    rscripts_dir = os.path.join(lib_path, common_exp_infos.SCRIPT_DIRS["rscripts"])
     script = "%s/pgmpir.R" % (rscripts_dir)
     try:
         routput = subprocess.check_output(["Rscript", script, rscripts_dir, 
-                                           summary_dir],
+                                           os.path.abspath(summary_dir)],
                                            stderr=subprocess.STDOUT
                                         )
         print routput

@@ -8,8 +8,6 @@ import imp
 import inspect
 from inspect import isclass
 
-from mpiguidelines import machine_setup 
-
 def create_local_dir(dirpath):
     if not os.path.exists(dirpath):
         print ("Creating local experiment directory %s" % dirpath)

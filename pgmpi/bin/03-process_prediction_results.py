@@ -2,7 +2,7 @@
 
 import sys
 import os
-from pprint import pprint
+from optparse import OptionParser
 
 # in bin
 base_path = os.path.dirname( os.path.realpath( sys.argv[0] ) )
@@ -11,9 +11,9 @@ base_path = os.path.dirname( base_path )
 lib_path = os.path.join( base_path, "lib" )
 sys.path.append(lib_path)
 
-from optparse import OptionParser
-from mpiguidelines import file_helpers
-from mpiguidelines import common_exp_infos
+from pgmpi.helpers import file_helpers
+from pgmpi.glexp_desc.abs_exp_desc import AbstractExpDescription 
+from pgmpi.helpers import common_exp_infos
 
 
 def get_nrep_predictions(pred_rawdata_dir):
@@ -61,34 +61,33 @@ if __name__ == "__main__":
 
     parser = OptionParser(usage="usage: %prog [options]")
 
-    parser.add_option("-r", "--raw_data_dir",
+    parser.add_option("-i", "--expfile",
                        action="store",
-                       dest="pred_rawdata_dir",
+                       dest="expfile",
                        type="string",
-                       help="path to prediction raw data directory")
-    parser.add_option("-o", "--output_dir",
-                       action="store",
-                       dest="pred_results_dir",
-                       type="string",
-                       help="path to prediction processed data directory")
-
+                       help="experiment input file")
+    
+    
     (options, args) = parser.parse_args()
 
-    if options.pred_rawdata_dir == None:
-        print >> sys.stderr, "ERROR: Prediction raw data directory does not exist. Please create it by running the nrep prediction jobs."
+    if options.expfile == None or not os.path.exists(options.expfile):
+        print >> sys.stderr, "ERROR: Experiment setup file not specified or does not exist"
         parser.print_help()
         sys.exit(1)
-    if options.pred_results_dir == None:
-        print >> sys.stderr, "ERROR: Prediction output directory does not exist."
-        parser.print_help()
-        sys.exit(1)
-        
-            
-    print "Processing prediction data from %s..." % options.pred_rawdata_dir
-    prediction_data = get_nrep_predictions(options.pred_rawdata_dir)
+
+
+    exp_configurator = file_helpers.instantiate_class_from_file(options.expfile, AbstractExpDescription)
+
+    experiment = exp_configurator.setup_exp()
+    
+    pred_rawdata_dir = experiment.get_local_pred_output_dir()
+    processed_dir = experiment.get_local_pred_processed_dir()
+
+    print "Processing prediction data from %s..." % pred_rawdata_dir
+    prediction_data = get_nrep_predictions(pred_rawdata_dir)
     
     assert len(prediction_data) > 0, "No prediction data found or incorrectly formatted. Generate prediction data first"  
-    output_file = os.path.join(options.pred_results_dir, common_exp_infos.PREDICTION_PROCESSED_OUTPUT_FILENAME)
+    output_file = os.path.join(processed_dir, common_exp_infos.PREDICTION_PROCESSED_OUTPUT_FILENAME)
     file_helpers.write_json_config_file(output_file, prediction_data)
 
     print("Prediction data summarized into the %s file" % output_file)

@@ -11,205 +11,55 @@ base_path = os.path.dirname( base_path )
 lib_path = os.path.join( base_path, "lib" )
 sys.path.append(lib_path)
 
-from mpiguidelines import file_helpers
-from mpiguidelines.benchmark import benchmarks
-from mpiguidelines import common_exp_infos
 
-MAX_NREPS = 1000
+from pgmpi.helpers import file_helpers
+from pgmpi.glexp_desc.abs_exp_desc import AbstractExpDescription  
+from pgmpi.helpers import common_exp_infos
 
-
-def format_input_data(glconfig_data, pred_data, max_nrep = 0):
-    
-    tests = {}
-    for guideline in glconfig_data:
-        bench_funcs = []
-        if "orig" in guideline:
-            bench_funcs.append(guideline["orig"])
-        if "mock" in guideline:
-            bench_funcs.append(guideline["mock"])
-            
-        for bench_func in bench_funcs:
-            for msize in guideline["msizes"]:   
-                run = {}
-                
-                if bench_func in tests.keys():
-                    run = tests[bench_func]
-                    
-                if not msize in run.keys():
-                    # default value for nreps
-                    run[msize] = {  
-                                "nreps": max_nrep
-                                 }   
-                    
-                    if pred_data:
-                        pred_values = [] 
-                        for res in pred_data:
-                            if res["test"] == bench_func and int(res["msize"]) == msize:
-                                pred_values.append(res)
-                                
-                        # replace nreps with predicted value if it exists for the current msize
-                        if len(pred_values) > 0:
-                            run[msize] = {
-                                          "nreps": pred_values[0]["max_nrep"]
-                                          }                      
-                tests[bench_func] = run
-    return tests
-
-
-
-def generate_remote_exp_dirs(expname, remote_output_basedir):           
-    # input/output directories on the remote server to set inside the job files
-    exp_output_dir = os.path.join(remote_output_basedir, expname)
-    
-    exp_dirname = expname + "_" + common_exp_infos.EXEC_BASEDIR
-    remote_input_dir = os.path.join(
-                          os.path.join(exp_output_dir, exp_dirname),
-                                     common_exp_infos.EXEC_DIRS["input"]
-                                     )
-    remote_output_dir = os.path.join(
-                                     os.path.join(exp_output_dir, exp_dirname),
-                                     common_exp_infos.EXEC_DIRS["raw_data"]
-                                     )
-    remote_jobs_dir = os.path.join(
-                                     os.path.join(exp_output_dir, exp_dirname),
-                                     common_exp_infos.EXEC_DIRS["jobs"]
-                                     )  
-    return (remote_input_dir, remote_output_dir, remote_jobs_dir)
-    
-    
+OUTPUT_SEPARATOR = "-" * 30 
 
 
 if __name__ == "__main__":
 
     parser = OptionParser(usage="usage: %prog [options]")
-
-    parser.add_option("-n", "--expname",
+    
+    parser.add_option("-i", "--expfile",
                        action="store",
-                       dest="expname",
+                       dest="expfile",
                        type="string",
-                       help="unique experiment name")
-    parser.add_option("-d", "--expdir",
-                       action="store",
-                       dest="base_expdir",
-                       type="string",
-                       help="path to local experiment directory")
-    parser.add_option("-g", "--glconf",
-                       action="store",
-                       dest="glconf",
-                       type="string",
-                       help="path to guidelines config file")
-    parser.add_option("-e", "--expconf",
-                       action="store",
-                       dest="expconf",
-                       type="string",
-                       help="path to exp config file")
-    parser.add_option("-m", "--machcode",
-                        action="store",
-                        dest="machcode",
-                        type="string",
-                        help="path to machine-specific class file")
-    parser.add_option("-p", "--predfile",
-                       action="store",
-                       dest="predfile",
-                       type="string",
-                       help="summarized prediction data")
-
+                       help="experiment input file")
+    
+    
     (options, args) = parser.parse_args()
 
-
-    if options.glconf == None or not os.path.exists(options.glconf):
-        print >> sys.stderr, "ERROR: Guidelines configuration file invalid"
+    if options.expfile == None or not os.path.exists(options.expfile):
+        print >> sys.stderr, "ERROR: Experiment setup file not specified or does not exist"
         parser.print_help()
         sys.exit(1)
 
-    if options.expconf == None or not os.path.exists(options.expconf):
-        print >> sys.stderr, "ERROR: Experiment configuration file invalid"
-        parser.print_help()
-        sys.exit(1)
 
-    if options.machcode == None or not os.path.exists(options.machcode):
-        print >> sys.stderr, "ERROR: Machine class file invalid"
-        parser.print_help()
-        sys.exit(1)
+    exp_configurator = file_helpers.instantiate_class_from_file(options.expfile, AbstractExpDescription)
+
+    experiment = exp_configurator.setup_exp()
     
-    if options.predfile == None:
-        print >> sys.stderr, "ERROR: Prediction output data file not specified"
-        parser.print_help()
-        sys.exit(1)
     
-    if options.expname == None:
-        print >> sys.stderr, "ERROR: Experiment name not specified"
-        parser.print_help()
-        sys.exit(1)
-    expname = options.expname
-
-    if options.base_expdir == None:
-        print >> sys.stderr, "ERROR: Experiment directory does not exist. Please create it using the ./bin/setupExp script"
-        parser.print_help()
-        sys.exit(1)
-    else:
-        exp_base_dir = os.path.abspath(options.base_expdir)
+    processed_dir = experiment.get_local_pred_processed_dir()
+    pred_file = os.path.join(processed_dir, common_exp_infos.PREDICTION_PROCESSED_OUTPUT_FILENAME)
+    
+    prediction_data = file_helpers.read_json_config_file(pred_file) 
+    assert len(prediction_data) > 0, "No prediction data found or incorrectly formatted. Generate prediction data first"  
+    
+    
+    experiment.generate_verification_input_files(prediction_data)
+    experiment.create_verification_jobs()
+    
+    print OUTPUT_SEPARATOR
+    print OUTPUT_SEPARATOR
+    if not experiment.get_exp_dir() == experiment.get_remote_exp_dir():
+        print "To execute the experiment: \nCopy: \n\t%s \nTo the target machine in: \n\t%s\n" % (experiment.get_exp_dir(), os.path.dirname(experiment.get_remote_exp_dir())) 
+        print OUTPUT_SEPARATOR
+    print "Execute the guideline verification jobs from: \n\t%s\n" % (experiment.get_remote_verif_job_dir())
+    print OUTPUT_SEPARATOR
+    
+    
   
-    
-    exec_dir_name = expname + "_" + common_exp_infos.EXEC_BASEDIR
-    exp_dir = os.path.join(exp_base_dir, expname)
-    assert os.path.isdir(exp_dir), "Cannot find experiment execution directory %s" % (exec_dir_name)
-        
-    exec_dir = os.path.join(exp_dir, exec_dir_name) 
-    exec_input_files_dir = os.path.join(exec_dir, common_exp_infos.EXEC_DIRS["input"])
-    exec_job_files_dir = os.path.join(exec_dir, common_exp_infos.EXEC_DIRS["jobs"])
-    
-    # load configuration files
-    glconfig_data = file_helpers.read_json_config_file(options.glconf)
-    expconfig_data = file_helpers.read_json_config_file(options.expconf)
-    
-    # load prediction results
-    prediction_data = None
-    if options.predfile != None and os.path.exists(options.predfile):
-    #    shutil.copy(options.predfile, execconfig_dir)
-        prediction_data = file_helpers.read_json_config_file(options.predfile)
-    
-    max_nrep = MAX_NREPS
-    if options.predfile == None or prediction_data == None or len(prediction_data) == 0:
-        # retrieve max nrep from the initial experiment configuration
-        if "prediction" in expconfig_data:
-            prediction_cfg = expconfig_data["prediction"]
-            if "max" in prediction_cfg:
-                max_nrep = prediction_cfg["max"]
-            else:
-                print >> sys.stderr, "No maximum nrep value specified in the configuration file %s." % (options.expconf)
-                max_nrep = MAX_NREPS
-        else:
-            print >> sys.stderr, "No prediction data specified in configuration file %s." % (options.expconf)
-            max_nrep = MAX_NREPS
-        print >> sys.stderr, "Warning: no prediction data found or incorrectly formatted. Using the predefined maximum runs %d" % (max_nrep)   
-
-     
-     
-     
-    machine_configurator = file_helpers.instantiate_class_from_file(options.machcode)
-    machine_configurator.setup_benchmark(benchmarks.BenchmarkGenerator())
-    benchmark = machine_configurator.get_benchmark()
-
-
-    assert os.path.isdir(exec_input_files_dir)
-    print "Generating (local) input data in %s..." % exec_input_files_dir
-    tests = format_input_data(glconfig_data, prediction_data, max_nrep)
-    benchmark.generate_input_files(tests, exec_input_files_dir)
-    print "Done."
-    
-    
-    
-    print "Generating job files in %s..." % exec_job_files_dir
-    remote_output_basedir = machine_configurator.get_exp_output_dir()
-    (remote_input_dir, remote_output_dir, remote_job_dir) = generate_remote_exp_dirs(expname, remote_output_basedir)
-    
-    machine_configurator.create_verification_jobs(expconfig_data, remote_input_dir, remote_output_dir, exec_job_files_dir)
-    print "Done." 
-    
-    print "--------------------"
-    print "To run the generated jobs, copy the entire experiment from %s to the target machine (in %s) and execute the jobs from %s. " % (exp_dir, remote_output_basedir, remote_job_dir)
-
-
-    
-    

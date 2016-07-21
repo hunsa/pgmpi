@@ -4,9 +4,9 @@ from __builtin__ import len
 PREDICTION_BENCH_REL_PATH = "src/pred_bench/mpibenchmarkPredNreps"
 REPROMPI_BENCH_REL_PATH = "mpibenchmark"
 
-from pgmpi.benchmark import abs_benchmark
+from pgmpi.benchmark.abs_benchmark import BenchmarkGenerator
 
-class GLReproMPIBench (abs_benchmark.BenchmarkGenerator):
+class GLReproMPIBench (BenchmarkGenerator):
     
     __mockup_functions = {"MPI_Allgather_with_MPI_Alltoall" : "GL_Allgather_as_Alltoall",
                   "MPI_Allgather_with_MPI_Allreduce" : "GL_Allgather_as_Allreduce",
@@ -60,24 +60,24 @@ class GLReproMPIBench (abs_benchmark.BenchmarkGenerator):
     def get_prediction_bench_binary(self):
         return os.path.join(self.__bench_path, PREDICTION_BENCH_REL_PATH)
 
-    def get_prediction_bench_args(self, bench_inputfile_dir, expconfig_data):
-        prediction_params = expconfig_data["prediction"]
-        
-        inputfile_path = os.path.join(bench_inputfile_dir, self.__input_file_name)
+    def get_prediction_bench_args(self, inputfile_path, expconfig):
+        methods = expconfig.get_prediction_methods()
+        thresholds = [ expconfig.get_prediction_threshold(m) for m in methods]
+        windows = [ expconfig.get_prediction_window(m) for m in methods ]
         
         prediction_bench_params = "-f %s --rep-prediction min=%d,max=%d,step=%d --pred-method=%s --var-thres=%s --var-win=%s" % ( 
                                     inputfile_path,
-                                    prediction_params["min"],
-                                    prediction_params["max"], prediction_params["step"], 
-                                    ",".join(prediction_params["methods"]),
-                                    ",".join(map(str, prediction_params["thresholds"])),
-                                    ",".join(map(str, prediction_params["windows"]))
+                                    expconfig.get_prediction_min_nrep(),
+                                    expconfig.get_prediction_max_nrep(),
+                                    expconfig.get_prediction_step_nrep(),
+                                    ",".join(methods),
+                                    ",".join(map(str, thresholds)),
+                                    ",".join(map(str, windows))
                                     )
         return prediction_bench_params
     
 
-    def get_verification_bench_args(self, bench_inputfile_dir, expconfig_data):
-        inputfile_path = os.path.join(bench_inputfile_dir, self.__input_file_name)
+    def get_verification_bench_args(self, inputfile_path, expconfig_data):
         
         bench_params = "-f %s" % (inputfile_path)
         return bench_params

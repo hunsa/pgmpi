@@ -8,6 +8,7 @@ import abc
 class AbstractGLConfig():
     __metaclass__ = abc.ABCMeta
 
+
     @abc.abstractmethod  
-    def get_gl_config(self):
+    def get_gl_filepath(self):
         pass

@@ -10,6 +10,7 @@ import abc
 class AbstractExperimentalConfig():
     __metaclass__ = abc.ABCMeta
 
-    @abc.abstractmethod        
-    def get_exp_config(self):
+    
+    @abc.abstractmethod 
+    def get_conf_filepath(self):
         pass

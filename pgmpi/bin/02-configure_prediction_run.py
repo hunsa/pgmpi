@@ -11,37 +11,12 @@ base_path = os.path.dirname( base_path )
 lib_path = os.path.join( base_path, "lib" )
 sys.path.append(lib_path)
 
-from mpiguidelines import file_helpers
-from mpiguidelines.benchmark import benchmarks
-from mpiguidelines import common_exp_infos 
 
-
+from pgmpi.helpers import file_helpers
+from pgmpi.glexp_desc.abs_exp_desc import AbstractExpDescription  
 
     
-    
-
-def generate_remote_exp_dirs(expname, remote_output_basedir):    
-    exp_output_dir = os.path.join(remote_output_basedir, expname)
-        
-    # input/output directories on the remote server to set inside the job files
-    pred_dir_name = expname + "_" + common_exp_infos.PREDICTION_BASEDIR
-    remote_input_dir = os.path.join(
-                                     os.path.join(exp_output_dir, pred_dir_name),
-                                     common_exp_infos.PREDICTION_DIRS["input"]
-                                     )
-    remote_output_dir = os.path.join(
-                                     os.path.join(exp_output_dir, pred_dir_name),
-                                     common_exp_infos.PREDICTION_DIRS["raw_data"]
-                                     )
-    remote_job_dir = os.path.join(
-                                     os.path.join(exp_output_dir, pred_dir_name),
-                                     common_exp_infos.PREDICTION_DIRS["jobs"]
-                                     )    
-    return (remote_input_dir, remote_output_dir, remote_job_dir)
- 
-  
-    
-    
+OUTPUT_SEPARATOR = "-" * 30 
 
 if __name__ == "__main__":
 
@@ -62,32 +37,18 @@ if __name__ == "__main__":
         sys.exit(1)
 
 
-    exp_configurator = file_helpers.instantiate_class_from_file(options.expfile, abs_exp_desc.AbstractExpDescription)
+    exp_configurator = file_helpers.instantiate_class_from_file(options.expfile, AbstractExpDescription)
 
     experiment = exp_configurator.setup_exp()
-    experiment.generate_input_files()
-    
-    exec_dir_name = expname + "_" + common_exp_infos.PREDICTION_BASEDIR
-    exp_dir = os.path.join(exp_base_dir, expname)
-    assert os.path.isdir(exp_dir), "Cannot find experiment execution directory %s" % (exec_dir_name)
-        
-    exec_dir = os.path.join(exp_dir, exec_dir_name) 
-    exec_input_files_dir = os.path.join(exec_dir, common_exp_infos.EXEC_DIRS["input"])
-    exec_job_files_dir = os.path.join(exec_dir, common_exp_infos.EXEC_DIRS["jobs"])
-        
+    experiment.generate_pred_input_files()
+    experiment.create_prediction_jobs()
     
     
-    glconfig_data = file_helpers.read_json_config_file(options.glconf)
-    expconfig_data = file_helpers.read_json_config_file(options.expconf)
+    print OUTPUT_SEPARATOR
+    print OUTPUT_SEPARATOR
+    if not experiment.get_exp_dir() == experiment.get_remote_exp_dir():
+        print "To execute the experiment: \nCopy: \n\t%s \nTo the target machine in: \n\t%s\n" % (experiment.get_exp_dir(),  os.path.dirname(experiment.get_remote_exp_dir())) 
+        print OUTPUT_SEPARATOR
+    print "Execute the jobs from: \n\t%s\n" % (experiment.get_remote_pred_job_dir())
+    print OUTPUT_SEPARATOR
     
-     
-    machine_configurator = file_helpers.instantiate_class_from_file(options.machcode)
-    machine_configurator.setup_benchmark(benchmarks.BenchmarkGenerator())
-    benchmark = machine_configurator.get_benchmark()
-    
-    
-
-    
-       
-    print "--------------------"
-    print "To run the generated jobs, copy the entire experiment from %s to the target machine (in %s) and execute the jobs from %s. " % (exp_dir, remote_output_basedir, remote_job_dir)
