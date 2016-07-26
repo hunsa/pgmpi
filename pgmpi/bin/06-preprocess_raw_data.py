@@ -80,9 +80,10 @@ if __name__ == "__main__":
 #         base_expdir = os.path.abspath(options.base_expdir)
 #===============================================================================
 
-
-    exp_configurator = file_helpers.instantiate_class_from_file(options.expfile, AbstractExpDescription)
-
+    #instantiate experiment configuration class from user file
+    exp_configurator_class = file_helpers.get_class_from_file(options.expfile, AbstractExpDescription)
+    exp_configurator = exp_configurator_class() 
+    
     experiment = exp_configurator.setup_exp()
 
 
@@ -90,25 +91,25 @@ if __name__ == "__main__":
     data_dir = experiment.get_local_verif_alldata_dir()
     output_dir = experiment.get_local_verif_processed_dir()
         
-    data_file = os.path.join(data_dir, "data.txt")
+    data_file = os.path.join(data_dir, common_exp_infos.FINAL_FILENAMES["alldata"])
         
     if not (os.path.exists(data_file)):
         print  "\nGenerated data file does not exist: %s\n" %  data_file
-        print "Run ./collectAllData.py script first."
+        print "Run ./pgmpi/bin/05-collect_raw_data.py script first."
         sys.exit(1)
    
     
     # get guidelines
-    guidelines_file = os.path.join(output_dir, "guidelines_catalog.txt")
+    guidelines_file = os.path.join(output_dir, common_exp_infos.FINAL_FILENAMES["guidelines_list"])
     experiment.create_guidelines_catalog(guidelines_file)
 
     print("\nSummarizing data...\n")
     script = "%s/summarizeGuidelines.R" % (rscripts_dir)
     try:
         routput = subprocess.check_output(["Rscript", script, rscripts_dir, 
-                                           #guidelines_file, 
                                            os.path.abspath(data_file), 
-                                           os.path.abspath(output_dir)],
+                                           os.path.abspath(output_dir),
+                                           common_exp_infos.SUMMARIZED_DATA_FILENAME_EXTENSION],
                                            stderr=subprocess.STDOUT
                                         )
         print routput

@@ -36,8 +36,9 @@ if __name__ == "__main__":
         parser.print_help()
         sys.exit(1)
 
-
-    exp_configurator = file_helpers.instantiate_class_from_file(options.expfile, AbstractExpDescription)
+    #instantiate experiment configuration class from user file
+    exp_configurator_class = file_helpers.get_class_from_file(options.expfile, AbstractExpDescription)
+    exp_configurator = exp_configurator_class() 
 
     experiment = exp_configurator.setup_exp()
     experiment.generate_pred_input_files()

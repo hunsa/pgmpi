@@ -3,6 +3,7 @@ library(logging)
 library(reshape2)
 library(plyr)
 
+
 basicConfig()
 options(width=200)
 setLevel('WARNING', getHandler('basic.stdout'))
@@ -19,27 +20,6 @@ convert_significance <- function(sig_vector) {
   result_vec
 }
 
-
-read_partial_data_from_dir <- function(base_dir, filepattern= "\\.txt$") {
-  
-  data_files <- list.files(base_dir, pattern = filepattern)
-  
-  if( length(data_files) <= 0 ) {
-    warning("no files found")
-    dfres <- data.frame
-  } else {
-    dflist <- list()
-    for(i in 1:length(data_files)) {    
-      fname <- paste(base_dir,"/",data_files[i],sep="")
-      loginfo(paste0("reading file: ", fname))
-      df <- read.table(fname, header=TRUE, stringsAsFactors = FALSE)
-      dflist[[i]] <- df
-    }  
-    
-    dfres <- do.call(rbind, dflist)  
-  }
-  dfres
-}
 
 read_gl_file <- function(fname="guidelines_catalog.txt") {
   dfres <- read.table(fname, header=TRUE)
@@ -287,16 +267,21 @@ args <- commandArgs(trailingOnly = TRUE)
 
 setwd(args[1])
 
-#source("common/process_bench_output.R")
+source("common/processBenchOutput.R")
 
 partial_res_dir <- args[2]
+guidelines_list_file <- args[3]
 
-#partial_res_dir <- "../../../test_cases/alex2/output/exp_local10/results/summary/"
+partial_res_pattern <- ""
+if (length(args) == 4) {
+  partial_res_pattern <- args[4]
+}
 
 
-df <- read_partial_data_from_dir(partial_res_dir, "data.*\\.txt$")
+df <- read_data_from_dir(partial_res_dir, properties = NA,
+                         pattern = partial_res_pattern)
 
-dfgl <- read_gl_file(paste0(partial_res_dir, "/guidelines_catalog.txt"))
+dfgl <- read_gl_file(guidelines_list_file)
 
 for(nprocs in unique(df$nprocs)) {
   for(nnp in unique(df$nnp)) {

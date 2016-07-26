@@ -33,12 +33,13 @@ read_properties <- function(filename)
 # set properties in vector "properties" to each column of data frame df
 set_properties <- function(df, properties, filename)
 { 
-  prop_df <- read_properties(filename)
-  for (prop in properties)
-  {
-    df[prop] <- prop_df[prop]
+  if (!is.na(properties)) {
+    prop_df <- read_properties(filename)
+    for (prop in properties)
+    {
+      df[prop] <- prop_df[prop]
+    }
   }
-  
   df
 }
 

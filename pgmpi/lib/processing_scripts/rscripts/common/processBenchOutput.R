@@ -1,12 +1,13 @@
 
 library(plyr)
 library(Rmisc)
+library(logging)
 
 source("common/readExpProperties.R")
 
 ############################################################
 
-read_data <- function(base_dir, pattern = "*.dat") {
+read_data_from_dir <- function(base_dir, pattern = "*.dat", properties = "", exclude = NA) {
   data_files <- list.files(base_dir, pattern = pattern)
   
   dflist <- list()
@@ -16,15 +17,17 @@ read_data <- function(base_dir, pattern = "*.dat") {
     dfres <- data.frame
   } else {
     for(i in 1:length(data_files)) {
-      print(data_files[i])
-      if (grepl("nodesfile", data_files[i])) {
-        next      
+      if (!is.na(exclude)) {
+        if (grepl(exclude, data_files[i])) {
+          next      
+        }
       }
+
+      fname = paste(base_dir,"/",data_files[i],sep="")
+      loginfo(paste0("reading file: ", fname))
+      df <- read.table(fname, header=TRUE, stringsAsFactors = FALSE)
+      df <- set_properties(df, properties, fname)    
       
-      df <- read.table(paste(base_dir,"/",data_files[i],sep=""), header=TRUE, stringsAsFactors = FALSE)
-      df <- set_properties(df, c("nnp", "nprocs", "sync"),
-                           paste(base_dir,"/",data_files[i],sep=""))    
-      #print(df[1,])
       df$nexp  <- i
       dflist[[i]] <- df
     }    

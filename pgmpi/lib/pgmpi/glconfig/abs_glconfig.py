@@ -12,3 +12,11 @@ class AbstractGLConfig():
     @abc.abstractmethod  
     def get_gl_filepath(self):
         pass
+    
+    @abc.abstractmethod  
+    def format_guideline_data_for_input_files(self, nreps):
+        pass
+    
+    @abc.abstractmethod  
+    def format_guideline_data_for_catalog(self):
+        pass

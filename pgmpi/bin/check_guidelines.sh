@@ -29,7 +29,7 @@ fi
 
 
 if [ $step -eq 1 ]; then
-    ./bin/01-create_local_file_structure.py -e $expfile -m $machinefile -g $glfile -d $expdir -n $expname
+    ./bin/01-create_local_file_structure.py -i test_cases/local_test/experiment_def.py
     check_result $?
 
     ./bin/02-configure_prediction_run.py -d $expdir -n $expname -e $expfile -m $machinefile -g $glfile

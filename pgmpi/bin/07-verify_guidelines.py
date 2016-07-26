@@ -36,18 +36,27 @@ if __name__ == "__main__":
         parser.print_help()
         sys.exit(1)
         
-    exp_configurator = file_helpers.instantiate_class_from_file(options.expfile, AbstractExpDescription)
+    #instantiate experiment configuration class from user file
+    exp_configurator_class = file_helpers.get_class_from_file(options.expfile, AbstractExpDescription)
+    exp_configurator = exp_configurator_class() 
+        
     experiment = exp_configurator.setup_exp()
 
 
     rscripts_dir = os.path.join(lib_path, common_exp_infos.SCRIPT_DIRS["rscripts"])
     summary_dir = experiment.get_local_verif_processed_dir()
-
+    guidelines_list_file = os.path.join(summary_dir, common_exp_infos.FINAL_FILENAMES["guidelines_list"])
         
     if not (os.path.exists(summary_dir)):
         print  "\nSummarized results do not exist: %s\n" %  summary_dir
-        print "Run the ./pgmpi/bin/summarizeData.py script first."
+        print "Run the ./pgmpi/bin/06-preprocess_raw_data.py script first."
         sys.exit(1)
+
+    if not (os.path.exists(guidelines_list_file)):
+        print  "\nGuidelines catalog file does not exist: %s\n" %  guidelines_list_file
+        print "Run the ./pgmpi/bin/06-preprocess_raw_data.py script first."
+        sys.exit(1)
+
     
 
     print("\n------------------------------------------------------------")
@@ -57,7 +66,10 @@ if __name__ == "__main__":
     script = "%s/pgmpir.R" % (rscripts_dir)
     try:
         routput = subprocess.check_output(["Rscript", script, rscripts_dir, 
-                                           os.path.abspath(summary_dir)],
+                                           os.path.abspath(summary_dir),
+                                           os.path.abspath(guidelines_list_file),
+                                           common_exp_infos.SUMMARIZED_DATA_FILENAME_PATTERN
+                                           ],
                                            stderr=subprocess.STDOUT
                                         )
         print routput

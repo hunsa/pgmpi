@@ -76,8 +76,10 @@ if __name__ == "__main__":
         sys.exit(1)
 
 
-    exp_configurator = file_helpers.instantiate_class_from_file(options.expfile, AbstractExpDescription)
-
+    #instantiate experiment configuration class from user file
+    exp_configurator_class = file_helpers.get_class_from_file(options.expfile, AbstractExpDescription)
+    exp_configurator = exp_configurator_class() 
+    
     experiment = exp_configurator.setup_exp()
     
     pred_rawdata_dir = experiment.get_local_pred_output_dir()

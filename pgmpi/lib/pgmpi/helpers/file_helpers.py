@@ -80,30 +80,30 @@ def read_cvs_file(filepath, fieldnames = None):
 
 
 
-def instantiate_class_from_file(class_path, parent_class):
+def get_class_from_file(class_path, parent_class):
     # load machine setup class from specified file    
-    mach_conf_module = imp.load_source("machconf", class_path)   
-    mach_class_list = []
-    for name, cls in mach_conf_module.__dict__.items():
+    conf_module = imp.load_source("mymodule", class_path)   
+    class_list = []
+    for name, cls in conf_module.__dict__.items():
         if isclass(cls) and issubclass(cls, parent_class) and not issubclass(parent_class, cls):
-            mach_class_list.append(cls)
+            class_list.append(cls)
     
-    if len(mach_class_list) == 0:
+    if len(class_list) == 0:
         print >> sys.stderr, "Cannot load configuration class from: %s" % class_path
         sys.exit(1)
     
-    if len(mach_class_list) > 1:
+    if len(class_list) > 1:
         print >> sys.stderr, "Multiple configuration classes found in: %s" % class_path
         sys.exit(1)    
     
     # instantiate machine setup  class
     try:
-        machine_configurator = mach_class_list[0]()
+        myclass = class_list[0]
     except Exception, err:
         print 'ERROR: Cannot instantiate class defined in %s: \n' % class_path, str(err)
         exit(1)
 
-    return machine_configurator
+    return myclass
     
     
 

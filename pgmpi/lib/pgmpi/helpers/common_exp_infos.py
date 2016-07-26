@@ -32,3 +32,12 @@ CONFIG_BASEDIR = "config"
 SCRIPT_DIRS = {
        "rscripts": "processing_scripts/rscripts"
        }
+
+
+FINAL_FILENAMES = {
+             "alldata": "data.txt",
+             "guidelines_list": "guidelines_catalog.txt"
+             }
+BENCH_OUTPUT_FILENAME_PATTERN = ""
+SUMMARIZED_DATA_FILENAME_EXTENSION = ".txt"
+SUMMARIZED_DATA_FILENAME_PATTERN = "data.*\\.txt$"

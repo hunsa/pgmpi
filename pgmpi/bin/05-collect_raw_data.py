@@ -63,8 +63,10 @@ if __name__ == "__main__":
         sys.exit(1)
 
 
-    exp_configurator = file_helpers.instantiate_class_from_file(options.expfile, AbstractExpDescription)
-
+    #instantiate experiment configuration class from user file
+    exp_configurator_class = file_helpers.get_class_from_file(options.expfile, AbstractExpDescription)
+    exp_configurator = exp_configurator_class() 
+    
     experiment = exp_configurator.setup_exp()
 
 
@@ -78,7 +80,8 @@ if __name__ == "__main__":
         sys.exit(1)
     
     file_helpers.create_local_dir(output_dir)
-    output_file = os.path.join(output_dir, "data.txt")
+    output_file = os.path.join(output_dir, common_exp_infos.FINAL_FILENAMES["alldata"])
+    rawdata_pattern = common_exp_infos.BENCH_OUTPUT_FILENAME_PATTERN
     print(rawdata_dir)
     print (rscripts_dir)
     
@@ -87,7 +90,8 @@ if __name__ == "__main__":
     try:
         routput = subprocess.check_output(["Rscript", script, rscripts_dir, 
                                            os.path.abspath(rawdata_dir), 
-                                           os.path.abspath(output_file)],
+                                           os.path.abspath(output_file),
+                                           rawdata_pattern],
                                 stderr=subprocess.STDOUT
                                 )
         print routput

@@ -13,10 +13,17 @@ args <- commandArgs(trailingOnly = TRUE)
 
 setwd(args[1])
 
-source("common/process_bench_output.R")
+source("common/processBenchOutput.R")
 
 data_file <- args[2]
 output_dir <- args[3]
+
+file_extension <- ""
+if (length(args) == 4) {
+  file_extension <- args[4]
+}
+
+
 
 
 df <- read.table(data_file, header=TRUE, stringsAsFactors = FALSE)
@@ -32,16 +39,7 @@ all_tests <- unique(df1$test)
 
 for(test in all_tests) {
   df2 <- df1[df1$test == test,]
-  write_data(df2, paste(output_dir, "/data", test, ".txt", sep = ''))
+  write_data(df2, paste(output_dir, "/data", test, file_extension, sep = ''))
 }
-
-
-# for(i in 1:nrow(guidelines)) {
-#   g <- guidelines[i,]
-# 
-#   df2 <- df1[df1$test == g$f1 | df1$test == g$f2,]
-#   write_data(df2, paste(output_dir, "/data", gsub("<", "_lte_", g$guideline), ".txt", sep = ''))
-# }
-
 
 
