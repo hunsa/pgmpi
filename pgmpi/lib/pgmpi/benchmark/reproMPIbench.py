@@ -4,9 +4,9 @@ from __builtin__ import len
 PREDICTION_BENCH_REL_PATH = "src/pred_bench/mpibenchmarkPredNreps"
 REPROMPI_BENCH_REL_PATH = "mpibenchmark"
 
-from pgmpi.benchmark.abs_benchmark import BenchmarkGenerator
+from pgmpi.benchmark import abs_benchmark
 
-class GLReproMPIBench (BenchmarkGenerator):
+class GLReproMPIBench (abs_benchmark.BenchmarkGenerator):
     
     __mockup_functions = {"MPI_Allgather_with_MPI_Alltoall" : "GL_Allgather_as_Alltoall",
                   "MPI_Allgather_with_MPI_Allreduce" : "GL_Allgather_as_Allreduce",
@@ -45,9 +45,10 @@ class GLReproMPIBench (BenchmarkGenerator):
     # translate input file data into the correct format for the benchmark
     def generate_input_file_data(self, input_data):
         file_contents = []
-        for call in input_data.keys():
+
+        for call in sorted(input_data.keys()):
             test = input_data[call]
-            for msize in test.keys():
+            for msize in sorted(test.keys()):
                 e = test[msize]
                 translated_name = self.translate_name(call)
                 file_contents.append( "%s %d %d" % (translated_name, msize, e["nreps"]))

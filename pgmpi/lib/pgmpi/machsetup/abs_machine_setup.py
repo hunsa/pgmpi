@@ -1,7 +1,7 @@
 import abc
 
 
-class PGMPIMachineConfigurator:
+class PGMPIAbstractMachineConfigurator:
     __metaclass__ = abc.ABCMeta
 
     #def create_prediction_jobs(self, expconfig_data, output_dir):

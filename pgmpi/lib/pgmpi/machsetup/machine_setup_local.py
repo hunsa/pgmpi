@@ -1,9 +1,9 @@
 
 import os
 
-from pgmpi.machsetup.machine_setup import PGMPIMachineConfigurator
+from pgmpi.machsetup import abs_machine_setup
 
-class PGMPIMachineConfiguratorLocal(PGMPIMachineConfigurator):
+class PGMPIMachineConfiguratorLocal(abs_machine_setup.PGMPIAbstractMachineConfigurator):
 
     __mpirun_path = "mpirun"
     __mpi_common_args = "-bind-to core"
@@ -31,14 +31,14 @@ class PGMPIMachineConfiguratorLocal(PGMPIMachineConfigurator):
         
         assert(self.__mpirun_path != ""), "No mpirun path specified. Please check the informations provided in the machine configuration script."
         
-        check_bench = ["if [ ! -f %s ]; then " % (bench_binary_path), 
-                        "echo \"Benchmark path incorrect: %s \" " % (bench_binary_path),
+        check_bench = ["if [ ! -f %s ]; then" % (bench_binary_path), 
+                        "echo \"Benchmark path incorrect: %s \"" % (bench_binary_path),
                         "exit 1",
                         "fi"
                         ]  
  
-        create_output_dir = ["mkdir -p %s " % (remote_output_dir),
-                             "mkdir -p %s/logs " % (remote_output_dir)
+        create_output_dir = ["mkdir -p %s" % (remote_output_dir),
+                             "mkdir -p %s/logs" % (remote_output_dir)
                              ]
         
         bench_call = "%s %s" % (bench_binary_path, bench_args) 
@@ -50,13 +50,13 @@ class PGMPIMachineConfiguratorLocal(PGMPIMachineConfigurator):
             outname = "%s/mpi_bench_r%d.dat" % ( remote_output_dir, i)
             outlogname = "%s/logs/mpi_bench_r%d.log" % ( remote_output_dir, i)
                 
-            mpirun_calls += [ "echo \"Starting mpirun %d...\" " %(i),
-                             "echo \"#@nodes=%s\" > %s " % (nodes, outname),
-                             "echo \"#@nnp=%s\" >> %s " % (nnp, outname),
+            mpirun_calls += [ "echo \"Starting mpirun %d...\"" %(i),
+                             "echo \"#@nodes=%s\" > %s" % (nodes, outname),
+                             "echo \"#@nnp=%s\" >> %s" % (nnp, outname),
                              "%s %s %s >> %s 2>> %s" % ( self.__mpirun_path, mpirun_args, 
                                                                bench_call,
                                                                outname, outlogname),
-                            "echo \"Done.\" ",
+                            "echo \"Done.\"",
                             "\n"
                             ]
         return check_bench + create_output_dir + mpirun_calls

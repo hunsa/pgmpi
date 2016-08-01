@@ -14,7 +14,7 @@ def create_local_dir(dirpath):
         os.system("mkdir -p %s" % dirpath)
     else:
         if os.path.isdir(dirpath):   
-            print ("Warning: Local directory already exists - %s" % dirpath)
+            print  >> sys.stderr, "Warning: Local directory already exists - %s" % dirpath
             return False
     return True
   
@@ -24,12 +24,14 @@ def read_json_config_file(filepath):
         data = json.load(json_data)
     except IOError:
         data = {}
+        print >> sys.stderr, "Cannot read data from file: %s" % filepath
+        sys.exit(1)
     return data
 
 def write_json_config_file(filepath, data):
     try:
         if os.path.exists(filepath): 
-            print ("Warning: Overwriting file - %s" % filepath)
+            print  >> sys.stderr, "Warning: Overwriting file - %s" % filepath
         with open(filepath, "w") as f:
             json.dump(data, f, indent=4)
     except:
@@ -73,6 +75,8 @@ def read_cvs_file(filepath, fieldnames = None):
                 
     except IOError:
         data = []
+        print >> sys.stderr, "Cannot read data from file: %s" % filepath
+        sys.exit(1)
 
     assert(len(data) > 0), "Cannot read file or file not correctly formatted (%s)" % (filepath)
     return data
@@ -100,7 +104,7 @@ def get_class_from_file(class_path, parent_class):
     try:
         myclass = class_list[0]
     except Exception, err:
-        print 'ERROR: Cannot instantiate class defined in %s: \n' % class_path, str(err)
+        print  >> sys.stderr, 'ERROR: Cannot instantiate class defined in %s: \n' % class_path, str(err)
         exit(1)
 
     return myclass

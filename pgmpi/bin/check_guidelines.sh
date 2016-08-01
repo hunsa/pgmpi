@@ -8,31 +8,33 @@ function check_result {
 }
 
 
-if [ $# -lt 5 ]
+if [ $# -lt 1 ]
 then
-echo "Usage: $0 experiment_dir experiment_name exp_config guidelines_config machine_class [start_from_step]"
+echo "Usage: $0 experiment_def_class [start_from_step]"
+echo "       Experiment steps: - 1 create local directories"
+echo "                         - 2 configure prediction experiment"
+echo "                         - 3 process prediction results"
+echo "                         - 4 configure guideline validation experiment"
+echo "                         - 5 collect raw data"
+echo "                         - 6 process raw data"
+echo "                         - 7 verify guidelines"
 exit 1
 fi
 
 
-expdir=$1
-expname=$2
-
-expfile=$3
-glfile=$4
-machinefile=$5
+expdef_file=$1
 
 step=1
-if [ $# -eq 6 ]; then
-    step=$6
+if [ $# -eq 2 ]; then
+    step=$2
 fi
 
 
 if [ $step -eq 1 ]; then
-    ./bin/01-create_local_file_structure.py -i test_cases/local_test/experiment_def.py
+    ./bin/01-create_local_file_structure.py -i ${expdef_file}
     check_result $?
 
-    ./bin/02-configure_prediction_run.py -d $expdir -n $expname -e $expfile -m $machinefile -g $glfile
+    ./bin/02-configure_prediction_run.py -i ${expdef_file}
     check_result $?
 
     echo "Execute generated prediction jobs before resuming from step 3."
@@ -40,10 +42,10 @@ fi
 
 
 if [ $step -eq 3 ]; then
-    ./bin/03-process_prediction_results.py -r $expdir/$expname/${expname}_nrep_prediction_exp/raw_data -o $expdir/$expname/${expname}_nrep_prediction_exp/results/summary
+    ./bin/03-process_prediction_results.py -i ${expdef_file}
     check_result $?
 
-    ./bin/04-configure_verifcation_run.py -n $expname -d $expdir -e $expfile -m $machinefile -g $glfile -p $expdir/$expname/${expname}_nrep_prediction_exp/results/summary/nrep_prediction_results.json
+    ./bin/04-configure_verifcation_run.py -i ${expdef_file}
     check_result $?
 
     echo "Execute generated jobs before resuming from step 5."
@@ -51,13 +53,13 @@ fi
 
 
 if [ $step -eq 5 ]; then
-    ./bin/05-collect_raw_data.py -d $expdir -n $expname
+    ./bin/05-collect_raw_data.py -i ${expdef_file}
     check_result $?
 
-    ./bin/06-preprocess_raw_data.py -d $expdir -n $expname -m $machinefile -g $glfile
+    ./bin/06-preprocess_raw_data.py -i ${expdef_file}
     check_result $?
 
-    ./bin/07-verify_guidelines.py -d $expdir -n $expname
+    ./bin/07-verify_guidelines.py -i ${expdef_file}
     check_result $?
 fi
 

@@ -84,6 +84,18 @@ class GLExperimentWriter(object):
     
     def get_remote_exp_dir(self):
         return self.__remote_basedir
+
+    def get_local_pred_input_dir(self):
+        return self.__local_pred.input_dir
+
+    def get_local_verif_input_dir(self):
+        return self.__local_verif.input_dir
+
+    def get_local_pred_job_dir(self):
+        return self.__local_pred.job_dir
+
+    def get_local_verif_job_dir(self):
+        return self.__local_verif.job_dir
     
     
     def get_remote_pred_job_dir(self):
@@ -151,6 +163,7 @@ class GLExperimentWriter(object):
                         if nreps == self.MAX_NREPS or res["max_nrep"] > nreps:
                             tests[current_test][msize]["nreps"] = res["max_nrep"]   
         
+        print tests
         file_contents = self.__benchmark.generate_input_file_data(tests)
                 
         with open(inputfile, "w") as f:

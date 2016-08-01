@@ -3,10 +3,10 @@ Created on Jun 24, 2016
 
 @author: carpenamarie
 '''
-from pgmpi.glconfig.abs_glconfig import AbstractGLConfig
+from pgmpi.glconfig import abs_glconfig
 from pgmpi.helpers import file_helpers 
 
-class Guidelines(AbstractGLConfig):
+class Guidelines(abs_glconfig.AbstractGLConfig):
 
 
     def __init__(self, gl_config_file):

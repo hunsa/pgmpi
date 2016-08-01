@@ -1,9 +1,9 @@
 
 import os
 
-from pgmpi.machsetup.machine_setup import PGMPIMachineConfigurator
+from pgmpi.machsetup import abs_machine_setup
 
-class PGMPIMachineConfiguratorJupiterMVAPICH(PGMPIMachineConfigurator):
+class PGMPIMachineConfiguratorJupiterMVAPICH(abs_machine_setup.PGMPIAbstractMachineConfigurator):
 
     __mpirun_path = "/opt/mvapich2-2.1/bin/mpirun"
     __mpi_common_args = "-bind-to rr"
