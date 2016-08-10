@@ -5,8 +5,8 @@ from pgmpi.machsetup import abs_machine_setup
 
 class PGMPIMachineConfiguratorLocal(abs_machine_setup.PGMPIAbstractMachineConfigurator):
 
-    __mpirun_path = "mpirun"
-    __mpi_common_args = "-bind-to core"
+    mpirun_path = "mpirun"
+    mpi_common_args = "-bind-to core"
         
     
     def generate_prediction_job_contents(self, expconf, bench_binary_path, bench_args, remote_output_dir):
@@ -29,7 +29,7 @@ class PGMPIMachineConfiguratorLocal(abs_machine_setup.PGMPIAbstractMachineConfig
         nnp = expconf.get_num_nnp()
         nodes = expconf.get_num_nodes()
         
-        assert(self.__mpirun_path != ""), "No mpirun path specified. Please check the informations provided in the machine configuration script."
+        assert(self.mpirun_path != ""), "No mpirun path specified. Please check the informations provided in the machine configuration script."
         
         check_bench = ["if [ ! -f %s ]; then" % (bench_binary_path), 
                         "echo \"Benchmark path incorrect: %s \"" % (bench_binary_path),
@@ -53,7 +53,7 @@ class PGMPIMachineConfiguratorLocal(abs_machine_setup.PGMPIAbstractMachineConfig
             mpirun_calls += [ "echo \"Starting mpirun %d...\"" %(i),
                              "echo \"#@nodes=%s\" > %s" % (nodes, outname),
                              "echo \"#@nnp=%s\" >> %s" % (nnp, outname),
-                             "%s %s %s >> %s 2>> %s" % ( self.__mpirun_path, mpirun_args, 
+                             "%s %s %s >> %s 2>> %s" % ( self.mpirun_path, mpirun_args, 
                                                                bench_call,
                                                                outname, outlogname),
                             "echo \"Done.\"",
@@ -65,7 +65,7 @@ class PGMPIMachineConfiguratorLocal(abs_machine_setup.PGMPIAbstractMachineConfig
 
 
     def __get_mpi_args(self, nodes, nnp):
-        return "-np %s -ppn %s %s" % (nodes * nnp, nnp, self.__mpi_common_args)   
+        return "-np %s -ppn %s %s" % (nodes * nnp, nnp, self.mpi_common_args)   
 
 
 

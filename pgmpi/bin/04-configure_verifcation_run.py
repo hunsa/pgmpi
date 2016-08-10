@@ -37,6 +37,10 @@ if __name__ == "__main__":
         parser.print_help()
         sys.exit(1)
 
+    #include experiment file directory in the path
+    sys.path.append(os.path.dirname(options.expfile))
+
+
     #instantiate experiment configuration class from user file
     exp_configurator_class = file_helpers.get_class_from_file(options.expfile, AbstractExpDescription)
     exp_configurator = exp_configurator_class() 

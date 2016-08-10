@@ -163,7 +163,6 @@ class GLExperimentWriter(object):
                         if nreps == self.MAX_NREPS or res["max_nrep"] > nreps:
                             tests[current_test][msize]["nreps"] = res["max_nrep"]   
         
-        print tests
         file_contents = self.__benchmark.generate_input_file_data(tests)
                 
         with open(inputfile, "w") as f:
