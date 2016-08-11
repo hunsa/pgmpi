@@ -1,8 +1,8 @@
 import os
 from __builtin__ import len
 
-PREDICTION_BENCH_REL_PATH = "src/pred_bench/mpibenchmarkPredNreps"
-REPROMPI_BENCH_REL_PATH = "mpibenchmark"
+PREDICTION_BENCH_REL_PATH = "bin/mpibenchmarkPredNreps"
+REPROMPI_BENCH_REL_PATH = "bin/mpibenchmark"
 
 from pgmpi.benchmark import abs_benchmark
 

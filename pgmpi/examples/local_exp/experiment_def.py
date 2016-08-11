@@ -11,7 +11,7 @@ from pgmpi.machsetup import machine_setup_local
 
 class ExpDescription(abs_exp_desc.AbstractExpDescription):
 
-    __local_basedir = "test_cases/output/myexp62"
+    __local_basedir = "test_cases/output/myexp100"
     __remote_basedir = __local_basedir
 
     __benchmark_path_remote = "/Users/carpenamarie/Work/tuwien2014/code/mpibenchmark"

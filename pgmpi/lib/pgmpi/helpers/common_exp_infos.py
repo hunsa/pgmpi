@@ -2,7 +2,7 @@
 
 
 
-PREDICTION_BASEDIR = "nrep_prediction_exp"
+PREDICTION_BASEDIR = "01-nrep_prediction_exp"
 PREDICTION_DIRS = {
 #        "config" : "config",
         "input" : "input_files",
@@ -17,7 +17,7 @@ PREDICTION_PROCESSED_OUTPUT_FILENAME = "nrep_prediction_results.json"
 
 
 
-EXEC_BASEDIR = "experiment_exec"
+EXEC_BASEDIR = "02-experiment_exec"
 EXEC_DIRS = PREDICTION_DIRS
 
 EXEC_RESULTS_DIRS = {
