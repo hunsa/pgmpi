@@ -27,4 +27,4 @@
             "mock": "MPI_Allreduce_with_MPI_Reduce_scatter_block_MPI_Allgather",
             "msizes":  [16, 32, 64]
         }
-          ]
+]
