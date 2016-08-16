@@ -45,7 +45,7 @@ if [ $step -eq 3 ]; then
     ./bin/03-process_prediction_results.py -i ${expdef_file}
     check_result $?
 
-    ./bin/04-configure_verifcation_run.py -i ${expdef_file}
+    ./bin/04-configure_verification_run.py -i ${expdef_file}
     check_result $?
 
     echo "Execute generated jobs before resuming from step 5."
