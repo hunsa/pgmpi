@@ -1,0 +1,19 @@
+{
+"procs": 2,
+"nodes": 1,
+"nnp": 2,
+"nmpiruns": 2,
+
+"prediction": {
+    "min": 10,
+    "max": 200,
+    "step": 5,
+    "methods": ["cov_mean"],   
+    "thresholds": [0.01],
+    "windows": [10],
+    "nmpiruns": 3
+}
+
+}
+
+

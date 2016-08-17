@@ -8,7 +8,8 @@ import os
 import shutil
 from pgmpi.helpers import file_helpers
 from pgmpi.helpers import common_exp_infos
-
+from pgmpi.expconfig import glexpconfig
+from pgmpi.glconfig import glconfig
 
 class DirStructure(object):
 
@@ -35,14 +36,26 @@ class GLExperimentWriter(object):
     __input_file_name = "input.txt"
     __input_job_name = "job.sh"
 
-    def __init__(self, exp_config, gl_config, benchmark, machine_configurator, local_basedir, remote_basedir):
+    def __init__(self, benchmark, machine_configurator, local_basedir, remote_basedir):
 
-        self.__gl_config = gl_config
-        self.__exp_config = exp_config
+        # initialize guideline config and guideline_catalog from the predefined directory
+        exp_config_dir = os.path.join(os.getcwd(), common_exp_infos.CONFIG_BASEDIR)
+        gl_config_file = os.path.join(exp_config_dir, common_exp_infos.GUIDELINE_CONFIG_FILE)
+        gl_catalog_file = os.path.join(exp_config_dir, common_exp_infos.GUIDELINE_CATALOG_FILE)
+
+        self.__gl_config = glconfig.Guidelines(gl_catalog_file) 
+        self.__exp_config = glexpconfig.GLExperimentalConfig(gl_config_file)
+        
         self.__benchmark = benchmark
         self.__machine_configurator = machine_configurator
+        
         self.__local_basedir = local_basedir
+        
+        # use absolute path for if the remote directory is the same as the local one
         self.__remote_basedir = remote_basedir
+        if self.__remote_basedir == self.__local_basedir:
+            self.__remote_basedir = os.path.abspath(self.__remote_basedir)
+        
     
         local_pred_dir = os.path.join(self.__local_basedir, common_exp_infos.PREDICTION_BASEDIR)
         self.__local_pred = DirStructure(basedir = local_pred_dir, 
@@ -207,10 +220,10 @@ class GLExperimentWriter(object):
     def create_exp_dir_structure(self):
     
         exp_dir = self.__local_basedir
-        ret = file_helpers.create_local_dir(exp_dir)
-        if not ret:
-            print ("Specify another experiment name or path to create a new experiment.\n")
-            sys.exit(1) 
+        #ret = file_helpers.create_local_dir(exp_dir)
+        #if not ret:
+        #    print ("Specify another experiment name or path to create a new experiment.\n")
+        #    sys.exit(1) 
     
         # create prediction directory tree
         file_helpers.create_local_dir(self.__local_pred.basedir)
@@ -229,19 +242,19 @@ class GLExperimentWriter(object):
             file_helpers.create_local_dir(os.path.join(self.__local_verif.basedir, d))
 
         #create initial configuration directory
-        conf_dir = os.path.join(exp_dir, common_exp_infos.CONFIG_BASEDIR)
-        file_helpers.create_local_dir(conf_dir)
+        #conf_dir = os.path.join(exp_dir, common_exp_infos.CONFIG_BASEDIR)
+        #file_helpers.create_local_dir(conf_dir)
     
  
-    def create_init_config_files(self):
-        config_dir = os.path.join(self.__local_basedir, common_exp_infos.CONFIG_BASEDIR) 
-        assert os.path.isdir(config_dir)
-    
-        gl_file = self.__gl_config.get_gl_filepath()
-        shutil.copy(gl_file, config_dir)
-
-        exp_conf_file = self.__exp_config.get_conf_filepath()
-        shutil.copy(exp_conf_file, config_dir)
+#     def create_init_config_files(self):
+#         config_dir = os.path.join(self.__local_basedir, common_exp_infos.CONFIG_BASEDIR) 
+#         assert os.path.isdir(config_dir)
+#     
+#         gl_file = self.__gl_config.get_gl_filepath()
+#         shutil.copy(gl_file, config_dir)
+# 
+#         exp_conf_file = self.__exp_config.get_conf_filepath()
+#         shutil.copy(exp_conf_file, config_dir)
 
 
     def create_guidelines_catalog(self, guidelines_file):
