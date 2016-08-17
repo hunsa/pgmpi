@@ -1,13 +1,6 @@
 
 
 from pgmpi.glexp_desc import abs_exp_desc
-from pgmpi.expconfig import glexpconfig
-from pgmpi.glconfig import glconfig
-from pgmpi.experiment import glexp
-
-from pgmpi.benchmark import reproMPIbench
-from pgmpi.machsetup import machine_setup_local
-
 
 class ExpDescription(abs_exp_desc.AbstractExpDescription):
     # Local directory where the experiment files will be created

@@ -1,11 +1,7 @@
 
 
 from pgmpi.glexp_desc import abs_exp_desc
-from pgmpi.expconfig import glexpconfig
-from pgmpi.glconfig import glconfig
 from pgmpi.experiment import glexp
-
-from pgmpi.benchmark import reproMPIbench
 from pgmpi.machsetup import slurm_cluster
 
 
