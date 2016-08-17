@@ -66,7 +66,7 @@ if __name__ == "__main__":
     print("\nThe following performance guideline violations have been found:\n" )
     
     rscripts_dir = os.path.join(lib_path, common_exp_infos.SCRIPT_DIRS["rscripts"])
-    script = "%s/pgmpir.R" % (rscripts_dir)
+    script = "%s/showViolations.R" % (rscripts_dir)
     try:
         routput = subprocess.check_output(["Rscript", script, rscripts_dir, 
                                            os.path.abspath(summary_dir),

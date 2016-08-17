@@ -30,7 +30,7 @@ print(rawdata_pattern)
 # read data from ReproMPIbench-generated output
 df <- read_data_from_dir(rawdata_dir, 
                         pattern = rawdata_pattern,
-                        properties = c("nnp", "nprocs", "sync"),
+                        properties = NA,
                         exclude = "logs")
 
 write_data(df, output_file)

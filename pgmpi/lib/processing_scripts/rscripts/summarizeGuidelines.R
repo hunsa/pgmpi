@@ -28,7 +28,7 @@ if (length(args) == 4) {
 
 df <- read.table(data_file, header=TRUE, stringsAsFactors = FALSE)
 
-df1 <- ddply(df, .(test, msize, nprocs, nnp, nexp), function(df) {  
+df1 <- ddply(df, .(test, msize, nexp), function(df) {  
   df1 <- compute_stats(df, "runtime_sec", remove_outliers = TRUE)
   df1
 })  

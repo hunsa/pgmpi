@@ -212,7 +212,7 @@ check_all_violations <- function(df, dfgl) {
     
     if( nrow(df1) > 0 ) {
       
-      loginfo(paste(func, nprocs, nnp))
+      loginfo(paste(func))
       
       # get all pattern guidelines (the ones that have a second function mock and translated_mock defined)
       dfpat <- dfgl[dfgl$orig==func & (!is.na(dfgl$translated_mock)),]
@@ -224,7 +224,7 @@ check_all_violations <- function(df, dfgl) {
         pattern_func <- dfpat[pat_idx,]$translated_mock
         pattern_str  <- as.character(dfpat[pat_idx,]$guideline)
 
-        df2 <- df[df$test==pattern_func & df$nprocs==nprocs & df$nnp==nnp,]
+        df2 <- df[df$test==pattern_func,]
         
         if( nrow(df2) <= 0 ) {
           warning(paste0("pattern ", pattern_func, " has no data"))
@@ -258,42 +258,4 @@ check_all_violations <- function(df, dfgl) {
   
   dfres
 }
-
-
-
-
-# Get command line arguments
-args <- commandArgs(trailingOnly = TRUE)
-
-setwd(args[1])
-
-source("common/processBenchOutput.R")
-
-partial_res_dir <- args[2]
-guidelines_list_file <- args[3]
-
-partial_res_pattern <- ""
-if (length(args) == 4) {
-  partial_res_pattern <- args[4]
-}
-
-
-df <- read_data_from_dir(partial_res_dir, properties = NA,
-                         pattern = partial_res_pattern)
-
-dfgl <- read_gl_file(guidelines_list_file)
-
-for(nprocs in unique(df$nprocs)) {
-  for(nnp in unique(df$nnp)) {
-    
-    dft <- df[df$nprocs==nprocs & df$nnp==nnp,]
-    
-    dfvio <- check_all_violations(dft, dfgl)
-    
-    print(paste0("Total number of processes: ", nprocs, " (", nprocs/nnp, "x", nnp, ")"))
-    print(dfvio)
-    
-  }
-}
-
 
