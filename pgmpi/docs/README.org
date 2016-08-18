@@ -38,15 +38,23 @@ paper:
 
 
    
-* Prerequisites
+* Installation
   
 *** On the local machine 
   - Python 2.7
-  - R (version >= 3.0.3)
+  - R
+  - PGMPI
+
+Note that PGMPI is only required on the *local machine* where the
+experiment is configured.  
+
+This tutorial assumes that the =pgmpi/bin= directory is exported to
+the current PATH.
+
 
 *** On the target machine
   - MPI library 
-  - the ReproMPI Benchmark (version >= 0.9.5) compiled for the target MPI
+  - the ReproMPI Benchmark (version >= 1.0.0) compiled for the target MPI
     library
 
 
@@ -180,40 +188,30 @@ The experiment configuration file is a Python class that specifies the
 execution environment and setup of the entire experiment.
 
 An example can be found in
-*pgmpi/examples/slurm_cluster1/experiment_def.py*.
+*pgmpi/examples/slurm_cluster1/experiment_conf.py*.
 
 #+BEGIN_EXAMPLE
 from pgmpi.glexp_desc import abs_exp_desc
-from pgmpi.expconfig import glexpconfig
-from pgmpi.glconfig import glconfig
 from pgmpi.experiment import glexp
-
 from pgmpi.benchmark import reproMPIbench
 from pgmpi.machsetup import slurm_cluster
 
 
 class ExpDescription(abs_exp_desc.AbstractExpDescription):
-    __local_basedir = "test_cases/output/myexp100"
-    __remote_basedir = "/home/carpenamarie/mpi-guidelines/exp/myexp100"
 
-    __benchmark_path_remote = "/home/carpenamarie/code/mpibenchmark"
- 
-    __gl_file = "examples/slurm_cluster1/exp_guidelines.json"
-    __config_file = "examples/slurm_cluster1/exp_config.json"
-
+    # Path to the ReproMPI benchmark binaries on the target machine 
+    # (more info on how to install ReproMPI can be found here: 
+    # https://github.com/hunsa/reprompi)
+    benchmark_path_remote = "/home/carpenamarie/code/mpibenchmark-1.0.0/bin"
 
     def setup_exp(self):
         
-        ec = glexpconfig.GLExperimentalConfig(self.__config_file)
-        gl = glconfig.Guidelines(self.__gl_file)
-        
-        bench    = reproMPIbench.GLReproMPIBench(self.__benchmark_path_remote)
+        bench    = reproMPIbench.GLReproMPIBench(self.benchmark_path_remote)
         machinfo = slurm_cluster.PGMPIMachineConfiguratorSlurm()
    
-        exp = glexp.GLExperimentWriter(ec, gl, bench, machinfo, self.__local_basedir, self.__remote_basedir)
+        exp = glexp.GLExperimentWriter(bench, machinfo)
 
-        return exp
-    
+        return exp    
 #+END_EXAMPLE
 
 The *ExpDescription* extends the *abs_exp_desc.AbstractExpDescription*
@@ -230,21 +228,10 @@ to perform the guideline violations detection.
 The type of the experiment object is *glexp.GLExperimentWriter*, and
 it has the following constructor interface:
 #+BEGIN_EXAMPLE
-def __init__(self, exp_config, gl_config, benchmark, machine_configurator, local_basedir, remote_basedir)
+def __init__(self, benchmark, machine_configurator)
 #+END_EXAMPLE
 
 The parameters have to be defined by the user as follows:
-
-  - *exp_config*: object that handles the execution configuration
-    based on the specified configuration file
-    #+BEGIN_EXAMPLE
-    ec = glexpconfig.GLExperimentalConfig(self.__config_file)
-    #+END_EXAMPLE
-
-  - *gl_config*: object that handles the guidelines input file
-    #+BEGIN_EXAMPLE
-    gl = glconfig.Guidelines(self.__gl_file)
-    #+END_EXAMPLE
 
   - *benchmark*: indicates which benchmark will be used for conducting
     the experiment. Currently, PGMPI only supports the ReproMPI
@@ -275,7 +262,185 @@ The parameters have to be defined by the user as follows:
     #+END_EXAMPLE   
 
 
-* Running the PGMPI Tool
+* Using the PGMPI Tool for a Local Experiment
+
+The PGMPI tool includes a set of scripts to perform each of the steps
+required to verify performance guidelines for MPI libraries.
+
+This section describes the steps to test PGMPI by configuring and
+conducting an experiment on the local machine.
+
+It thus requires that the following conditions are met:
+ - an MPI library is installed and the *mpirun* command is available
+   in the PATH
+ - the ReproMPI benchmark is installed
+ - PGMPI is installed and *pgmpi/bin* is in the current PATH
+
+
+** Local Step 1: Experiment Initialization
+
+Create a directory on the local machine, e.g., =exp1=.
+
+#+BEGIN_EXAMPLE
+$ mkdir exp1
+$ cd exp1
+$ pgmpirun.py init ./
+#+END_EXAMPLE
+
+The script will create the experiment directory tree in the current
+directory and copy a set of default configuration files into the
+=config= subdirectory.
+
+Now the =exp1= directory will contain the following directory
+structure:
+#+BEGIN_EXAMPLE
+exp1
+    ├── 01-nrep_prediction_exp
+    │   ├── jobs
+    │   │   ├── input_files
+    │   │   └── raw_data
+    │   └── results
+    │       └── summary
+    ├── 02-experiment_exec
+    │   ├── jobs
+    │   │   ├── input_files
+    │   │   └── raw_data
+    │   └── results
+    │       ├── alldata
+    │       ├── plots
+    │       └── summary
+    └── config
+        ├── experiment_conf.py
+        ├── guideline_catalog.json
+        └── guideline_conf.json
+#+END_EXAMPLE
+
+The =config= directory will contain the default version of the three
+configuration files:
+ - =guideline_catalog.json= the complete list of guidelines that can
+   be verified with the PGMPI tool, each of them having a predefined
+   set of message sizes to be tested.
+
+ - =guideline_conf.json= the configuration of the
+   guideline-verification experiment.
+
+ - =experiment_conf.py= the experiment description.
+
+*Important note:* The configuration files name or location cannot be
+changed.
+
+To proceed, it is necessary to modify the =benchmark_path_remote= in
+the =experiment_conf.py= file to match the path to the ReproMPI
+binaries on your machine.
+
+
+** Local Step 2: Setup the Prediction Step
+
+All following steps can be executed from the =exp1= directory, without
+the need to specify the experiment directory at each step.
+
+#+BEGIN_EXAMPLE
+$ pgmpirun setup pred
+#+END_EXAMPLE
+
+This script will create the job file for the NREP prediction step for
+each of the MPI collectives specified in the guidelines catalog file.
+It will populate the =01-nrep_prediction_exp/jobs= directory with a
+job file and an input file.
+
+
+** The NREP Prediction Step
+
+All job and input files have been created in the
+=exp1/01-nrep_prediction_exp/jobs= directory.  As in this case there
+is no *remote machine*, we can proceed to the next step.
+
+
+*** Execution of the Prediction Step
+
+*Important note:* To execute the job file, the user must go to its
+parent directory first.
+
+#+BEGIN_EXAMPLE
+$ cd 01-nrep_prediction_exp/jobs
+$ sh job.sh 
+#+END_EXAMPLE
+
+This will execute the ReproMPI benchmark and generate output files in
+the =raw_data= subdirectory.
+
+** Local Step 3: Process  Prediction Results
+
+Continue the experiment from the =exp1= directory on the local
+machine.
+
+#+BEGIN_EXAMPLE
+$ pgmpirun process pred
+#+END_EXAMPLE
+
+The obtained *nrep* values will be computed and written in the
+=01-nrep_prediction_exp/results= directory.
+
+
+**  Local Step 4: Setup the Measurement Step
+
+#+BEGIN_EXAMPLE
+$ pgmpirun setup verif
+#+END_EXAMPLE
+
+The script generates an experiment directory in =02_experiment_exec=
+directory. The calls to the benchmark are configured to use the *nrep*
+parameter computed from the previously obtained prediction results.
+
+
+** The Measurement Step
+
+The guideline verification job can now be directly executed.
+
+*** Execution of the Measurement Step
+
+#+BEGIN_EXAMPLE
+$ cd 02_experiment_exec/jobs
+$ sh job.sh 
+#+END_EXAMPLE
+
+This will execute the ReproMPI benchmark and generate output files in
+the =raw_data= subdirectory.
+
+** Local Step 5: Process the Measurement Step Data
+
+The measurement data is collected in a single data file which can
+later be reused to compute guideline violation and a summary of the
+measured data is computed to facilitate the re-execution of the
+detection of guideline violations step.
+
+The processing step has to be executed again from the root directory
+of the experiment.
+
+#+BEGIN_EXAMPLE
+$ cd ../../
+$ pgmpirun process verif
+#+END_EXAMPLE
+
+
+** Local Step 6: Analyze Step - Detection of Guideline Violations
+
+The detection script will print guideline violations that were found
+for the specified experiment.
+
+#+BEGIN_EXAMPLE
+$ pgmpirun check
+#+END_EXAMPLE
+
+
+
+
+
+
+
+
+
+* Running the PGMPI Tool - Advanced Scenario
 
 The PGMPI tool includes a set of scripts to perform each of the steps
 required to verify performance guidelines for MPI libraries.
@@ -289,84 +454,120 @@ job scheduler.
 We assume the experiment configuration is done on the user's local
 machine, while the jobs have to be executed on the target machine.
 
-Such an experiment has been configured here:
 
 #+BEGIN_EXAMPLE
 pgmpi/examples/slurm_cluster1
---- exp_config.json           # specifies the experimentexecution configuration
---- exp_guidelines.json       # defines the guidelines to be evaluated
---- experiment_def.py         # experiment setup file
+--- guideline_catalog.json     # defines the guidelines to be evaluated
+--- guideline_conf.json        # specifies the experimentexecution configuration
+--- experiment_conf.py         # experiment setup file
 #+END_EXAMPLE
 
-To proceed, it is necessary to *modify the experiment_def.py file* so
-that the following class attributes point to appropriate files on your
-local and remote machines:
+To proceed, it is necessary to *modify the experiment_conf.py file* so
+that the =benchmark_path_remote= class attributes points to the
+appropriate benchmark path on the remote machine:
 
 #+BEGIN_EXAMPLE
-    # Local directory where the experiment files will be created
-    __local_basedir = "test_cases/output/myexp100"
-    
-    
-    # Directory on the target machine where the experiment will be copied
-    # This directory is also the base path for the generated output files
-    __remote_basedir = "/home/carpenamarie/mpi-guidelines/exp/myexp100"
+from pgmpi.glexp_desc import abs_exp_desc
+from pgmpi.experiment import glexp
+from pgmpi.benchmark import reproMPIbench
+from pgmpi.machsetup import slurm_cluster
 
 
-    # Path to the ReproMPI benchmark installation on the target machine 
+class ExpDescription(abs_exp_desc.AbstractExpDescription):
+
+    # Path to the ReproMPI benchmark binaries on the target machine 
     # (more info on how to install ReproMPI can be found here: 
     # https://github.com/hunsa/reprompi)
-    __benchmark_path_remote = "/home/carpenamarie/code/mpibenchmark"
+    benchmark_path_remote = "/home/carpenamarie/code/mpibenchmark-1.0.0/bin"
 
- 
-    # Path to a local guidelines description file defining the performance 
-    # guidelines to be evaluated in the current experiment
-    __gl_file = "examples/slurm_cluster1/exp_guidelines.json"
+    def setup_exp(self):
+        
+        bench    = reproMPIbench.GLReproMPIBench(self.benchmark_path_remote)
+        machinfo = slurm_cluster.PGMPIMachineConfiguratorSlurm()
+   
+        exp = glexp.GLExperimentWriter(bench, machinfo)
 
-
-    # Path to a local experiment setup file for the current experiment
-    __config_file = "examples/slurm_cluster1/exp_config.json"
-#+END_EXAMPLE
-
-Let us assume the modified experiment description file can now be found in:
-#+BEGIN_EXAMPLE
-${PATH_TO_EXP_FILE}/experiment_def.py  
+        return exp
 #+END_EXAMPLE
 
 
 
-** Local Step 1: Experiment Directories Creation
+** Local Step 1: Experiment Initialization
+
+Create a directory on the local machine, e.g., =exp1=.
 
 #+BEGIN_EXAMPLE
-$ ./pgmpi/bin/01-create_local_file_structure.py -i ${PATH_TO_EXP_FILE}/experiment_def.py 
+$ mkdir exp1
+$ cd exp1
+$ pgmpirun.py init ./
 #+END_EXAMPLE
 
-This script will create the experiment directory tree in the
-*local_basedir/exp_name* directory and copy the configuration files into the
-*config* subdirectory.
+The script will create the experiment directory tree in the current
+directory and copy a set of default configuration files into the
+=config= subdirectory.
+
+Now the =exp1= directory will contain the following directory
+structure:
+#+BEGIN_EXAMPLE
+exp1
+    ├── 01-nrep_prediction_exp
+    │   ├── jobs
+    │   │   ├── input_files
+    │   │   └── raw_data
+    │   └── results
+    │       └── summary
+    ├── 02-experiment_exec
+    │   ├── jobs
+    │   │   ├── input_files
+    │   │   └── raw_data
+    │   └── results
+    │       ├── alldata
+    │       ├── plots
+    │       └── summary
+    └── config
+        ├── experiment_conf.py
+        ├── guideline_catalog.json
+        └── guideline_conf.json
+#+END_EXAMPLE
+
+The =config= directory will contain the following files:
+ - =guideline_catalog.json= the complete list of guidelines that can
+   be verified with the PGMPI tool, each of them having a predefined
+   set of message sizes to be tested.
+
+ - =guideline_conf.json= the configuration of the
+   guideline-verification experiment.
+
+ - =experiment_conf.py= the experiment description.
+
+To proceed, it is necessary to modify the =benchmark_path_remote= in
+the =experiment_conf.py= file to match the path to the benchmark
+binaries on your *remote machine*.
 
 
-** Local Step 2: Configuration phase for the Prediction Step
+** Local Step 2: Setup the Prediction Step
+
+All following steps can be executed from the =exp1= directory, without
+the need to specify the experiment directory at each step.
 
 #+BEGIN_EXAMPLE
-$ ./pgmpi/bin/02-configure_prediction_run.py  -i ${PATH_TO_EXP_FILE}/experiment_def.py 
+$ pgmpirun setup pred
 #+END_EXAMPLE
 
-This script will create the jobs for the NREP prediction step for each
-of the MPI collectives specified in the guidelines configuration file.
-The prediction experiment is created in the
-*local_basedir/exp_name/01_nrep_prediction_exp* directory.
+This script will create the job file for the NREP prediction step for
+each of the MPI collectives specified in the guidelines catalog file.
+It will populate the =01-nrep_prediction_exp/jobs= directory with a
+job file and an input file.
 
 
 ** The NREP Prediction Step
 
 As all job and input files have been created on the user local machine, 
-the entire experiment in the *local_basedir/exp_name* directory has to be copied
-to *remote_basedir* on the target machine (*remote_basedir* is the
-same directory as the one specified in the machine configuration file,
-as all experiment paths are defined relative to it in the job file).
+the =jobs= directory in the =exp1/01-nrep_prediction_exp/= has to be copied
+to the target machine, as instructed by the *pgmpirun* script output.
 
 #+BEGIN_EXAMPLE
-$ scp -r local_basedir/exp_name user@remote_machine:remote_basedir/
+$ scp -r 01-nrep_prediction_exp/jobs user@remote_machine:$REMOTE_PRED_DIR
 #+END_EXAMPLE
 
 
@@ -375,39 +576,46 @@ $ scp -r local_basedir/exp_name user@remote_machine:remote_basedir/
 Now the prediction job can be executed on the remote machine.  In the
 case of our SLURM cluster, the job can be submitted using sbatch.
 
+*Important note:* To execute the job file, the user must go to its
+parent directory first.
+
+
 #+BEGIN_EXAMPLE
-$ sbatch remote_basedir/exp_name/01-nrep_prediction_exp/jobs/job.sh 
+$ cd $REMOTE_PRED_DIR/jobs
+$ sbatch job.sh 
 #+END_EXAMPLE
 
 This will execute the ReproMPI benchmark and generate output files in
-the *remote_basedir/exp_name/01-nrep_prediction_exp/raw_data*
-(which can be then copied back to the original machine).
+the =raw_data= subdirectory (which can be then copied back to the
+original machine).
 
 #+BEGIN_EXAMPLE
-$ scp -r  user@remote_machine:remote_basedir/exp_name/01-nrep_prediction_exp/raw_data local_basedir/exp_name/01-nrep_prediction_exp/
+$ scp -r  user@remote_machine:$REMOTE_PRED_DIR/jobs/raw_data 01-nrep_prediction_exp/jobs/
 #+END_EXAMPLE
 
 
-** Local Step 3: Processing of the Prediction Results
+** Local Step 3: Process Prediction Results
+
+Continue the experiment from the =exp1= directory on the local
+machine.
 
 #+BEGIN_EXAMPLE
-$ ./pgmpi/bin/03-process_prediction_results.py -i ${PATH_TO_EXP_FILE}/experiment_def.py 
+$ pgmpirun process pred
 #+END_EXAMPLE
 
 The obtained *nrep* values will be computed and written in the
-*local_basedir/exp_name/01-nrep_prediction_exp/results* directory.
+=01-nrep_prediction_exp/results= directory.
 
 
-**  Local Step 4: Configuration of the Measurement Step
+**  Local Step 4: Setup the Measurement Step
 
 #+BEGIN_EXAMPLE
-$ ./pgmpi/bin/04-configure_verifcation_run.py -i ${PATH_TO_EXP_FILE}/experiment_def.py
+$ pgmpirun setup verif
 #+END_EXAMPLE
 
-The script generates an experiment directory in
-*local_basedir/exp_name/02_experiment_exec* directory. The calls to
-the benchmark are configured to use the *nrep* parameter computed from
-the previously obtained prediction results.
+The script generates an experiment directory in =02_experiment_exec=
+directory. The calls to the benchmark are configured to use the *nrep*
+parameter computed from the previously obtained prediction results.
 
 
 ** The Measurement Step
@@ -415,7 +623,7 @@ the previously obtained prediction results.
 The experiment files have to be copied to the remote machine again.
 
 #+BEGIN_EXAMPLE
-$ scp -r local_basedir/exp_name user@remote_machine:remote_basedir/
+$ scp -r 02_experiment_exec/jobs user@remote_machine:$REMOTE_DIR
 #+END_EXAMPLE
 
 
@@ -424,47 +632,38 @@ $ scp -r local_basedir/exp_name user@remote_machine:remote_basedir/
 The experiment can now be executed on the remote machine. 
 
 #+BEGIN_EXAMPLE
-$ sbatch remote_basedir/exp_name/02_experiment_exec/jobs/job.sh 
+$ cd $REMOTE_DIR/jobs
+$ sbatch job.sh 
 #+END_EXAMPLE
 
 This will execute the ReproMPI benchmark and generate output files in
-the *remote_basedir/exp_name/02_experiment_exec/raw_data* (which can
-be then copied back to the original machine).
+the =raw_data= subdirectory (which can be then copied back to the
+original machine).
 
 #+BEGIN_EXAMPLE
-$ scp -r  user@remote_machine:remote_basedir/exp_name/02_experiment_exec/raw_data local_basedir/exp_name/01-nrep_prediction_exp/
+$ scp -r  user@remote_machine:$REMOTE_DIR/jobs/raw_data  02_experiment_exec/jobs/
 #+END_EXAMPLE
 
 
-** Local Step 5: Collect All Measurement Data
+** Local Step 5: Process Measurement Data
 
 The measurement data is collected in a single data file which can
-later be reused to compute guideline violations.
+later be reused to compute guideline violation and a summary of the
+measured data is computed to facilitate the re-execution of the
+detection of guideline violations step.
 
 #+BEGIN_EXAMPLE
-$ ./pgmpi/bin/05-collect_raw_data.py -i ${PATH_TO_EXP_FILE}/experiment_def.py 
+$ pgmpirun process verif
 #+END_EXAMPLE
 
 
-
-** Local Step 6: Compute a Summarized View of the Measurement Data
-
-A summary of the measured data is computed to facilitate the
-re-execution of the detection of guideline violations step.
-
-#+BEGIN_EXAMPLE
-$ ./pgmpi/bin/06-preprocess_raw_data.py -i ${PATH_TO_EXP_FILE}/experiment_def.py 
-#+END_EXAMPLE
-
-
-
-** Local Step 7: Analyze Step - Detection of Guideline Violations
+** Local Step 6: Analyze Step - Detection of Guideline Violations
 
 The detection script will print guideline violations that were found
 for the specified experiment.
 
 #+BEGIN_EXAMPLE
-$ ./pgmpi/bin/07-verify_guidelines.py -i ${PATH_TO_EXP_FILE}/experiment_def.py
+$ pgmpirun check
 #+END_EXAMPLE
 
 
