@@ -18,7 +18,7 @@ from pgmpi.helpers import file_helpers
 from pgmpi.helpers import common_exp_infos
 from pgmpi.glexp_desc.abs_exp_desc import AbstractExpDescription  
     
-OUTPUT_SEPARATOR = "-" * 30 
+OUTPUT_SEPARATOR = "-" * 50 
     
     
 def initialize_experiment_handle():
@@ -27,9 +27,14 @@ def initialize_experiment_handle():
     exp_config_dir = os.path.join(os.getcwd(), common_exp_infos.CONFIG_BASEDIR)
     exp_file = os.path.join(exp_config_dir, common_exp_infos.EXP_CONF_FILE)
     
+    if not os.path.exists(exp_file):
+        print  >> sys.stderr, "ERROR: The experiment configuration file cannot be found. "
+        print  >> sys.stderr, "       Please make sure the experiment is initialized in %s\n" % os.getcwd()
+        exit(1)
+    
     #include experiment file directory in the path
     sys.path.append(os.path.dirname(exp_file))
-
+    
     #instantiate experiment configuration class from user file
     exp_configurator_class = file_helpers.get_class_from_file(exp_file, AbstractExpDescription)
     exp_configurator = exp_configurator_class() 
@@ -82,17 +87,13 @@ def get_nrep_predictions(pred_rawdata_dir):
 
     
 def exec_init(args):
-    print "Initializing experiment in %s..." % (args.dir)    
-
-    if args.dir == None or not os.path.isdir(args.dir):
-        print >> sys.stderr, "ERROR: Invalid directory specified. Please create directory before running the script."
-        parser.print_help()
-        sys.exit(1)        
+    print "Initializing experiment in %s" % (args.dir)     
 
     #create initial configuration directory
-    conf_dir = os.path.join(args.dir, common_exp_infos.CONFIG_BASEDIR)
+    # (relative to the experiment directory - 
+    #     which is also the current working directory)
+    conf_dir = common_exp_infos.CONFIG_BASEDIR
     file_helpers.create_local_dir(conf_dir)
-    
     
     default_conf_dir = os.path.join(lib_path, common_exp_infos.DEFAULT_CONFIG_DIR)
     exp_cf_file = os.path.join(default_conf_dir, common_exp_infos.EXP_CONF_FILE)
@@ -106,7 +107,7 @@ def exec_init(args):
     exp_file = os.path.join(default_conf_dir, common_exp_infos.GUIDELINE_CONFIG_FILE)
     assert os.path.exists(exp_file)    
     shutil.copy(exp_file, conf_dir)    
-        
+    
     experiment = initialize_experiment_handle()
     experiment.create_exp_dir_structure()
     
@@ -303,38 +304,63 @@ def exec_check(args):
 
 
 if __name__ == "__main__":
-
+    
+    common_args_parser = argparse.ArgumentParser(add_help=False)
+    common_args_parser.add_argument('dir', type=str, 
+                             nargs='?',
+                             action='store',
+                             metavar = "exp_dir",
+                             help='experiment directory',
+                             )
+    
+ 
+    choices_parser = argparse.ArgumentParser(add_help=False)
+    choices_parser.add_argument('step', type=str, 
+                              choices=['pred', 'verif'],
+                              action='store',
+                              help='select experimental step')  
+ 
+    
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(title='valid sub-commands',
                                        dest='subparser_name')
                                        #description='execute one of the following commands')
                                        #help='additional help')
-    init_parser = subparsers.add_parser('init', help='initialize experiment in the specified directory')
-    init_parser.add_argument('dir', type=str, 
-                             action='store',
-                             metavar = "exp_dir",
-                             help='experiment directory')
+    init_parser = subparsers.add_parser('init', 
+                                        parents=[common_args_parser],
+                                        help='initialize experiment in the specified directory')
     init_parser.set_defaults(process_func=exec_init)
     
-    setup_parser = subparsers.add_parser('setup', help='setup experiment (create input files/jobs)')
-    setup_parser.add_argument('step', type=str, 
-                              choices=['pred', 'verif'],
-                              action='store',
-                              help='select experimental step')
+    setup_parser = subparsers.add_parser('setup', 
+                                         parents=[choices_parser, common_args_parser],
+                                         help='setup experiment (create input files/jobs)')
     setup_parser.set_defaults(process_func=exec_setup)
     
-    process_parser = subparsers.add_parser('process', help='process experimental results')
-    process_parser.add_argument('step', type=str, 
-                              choices=['pred', 'verif'],
-                              action='store',
-                              help='select experimental step')    
+    process_parser = subparsers.add_parser('process', 
+                                           parents=[choices_parser, common_args_parser],
+                                           help='process experimental results')  
     process_parser.set_defaults(process_func=exec_process)
     
     
-    check_parser = subparsers.add_parser('check', help='verify guideline violations') 
+    check_parser = subparsers.add_parser('check', 
+                                         parents=[common_args_parser],
+                                         help='verify guideline violations') 
     check_parser.set_defaults(process_func=exec_check)
+
+
+
     
+    # parse all arguments
     args = parser.parse_args()
+    
+    if args.dir == None:
+        print "WARNING: No experiment directory specified. Using current directory.\n"
+        setattr(args, 'dir', "./")
+    elif not os.path.isdir(args.dir):
+        print  >> sys.stderr, "ERROR: The specified directory does not exist. Please create it before executing %s.\n" % sys.argv[0]
+        exit(1)
+    os.chdir(args.dir)  
+
     args.process_func(args)
 
 

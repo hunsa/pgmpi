@@ -31,7 +31,7 @@ class GLExperimentWriter(object):
     '''
     classdocs
     '''
-    MAX_NREPS = 1000
+    DEFAULT_NREPS = 0
     
     __input_file_name = "input.txt"
     __input_job_name = "job.sh"
@@ -164,7 +164,7 @@ class GLExperimentWriter(object):
         print "Generating (local) input data in %s..." % inputfile
         
         # initially set nreps to the maximum possible value
-        tests = self.__gl_config.format_guideline_data_for_input_files(nreps = self.MAX_NREPS)
+        tests = self.__gl_config.format_guideline_data_for_input_files(nreps = self.DEFAULT_NREPS)
         
         # set nreps according to the predicted values (if they were measured)
         if pred_data:
@@ -181,7 +181,7 @@ class GLExperimentWriter(object):
                     if msize in tests[current_test].keys():
                         nreps = tests[current_test][msize]["nreps"]
                         
-                        if nreps == self.MAX_NREPS or res["max_nrep"] > nreps:
+                        if nreps == self.DEFAULT_NREPS or res["max_nrep"] > nreps:
                             tests[current_test][msize]["nreps"] = res["max_nrep"]   
         
         file_contents = self.__benchmark.generate_input_file_data(tests)
@@ -234,12 +234,6 @@ class GLExperimentWriter(object):
     
     def create_exp_dir_structure(self):
     
-        exp_dir = self.__local_basedir
-        #ret = file_helpers.create_local_dir(exp_dir)
-        #if not ret:
-        #    print ("Specify another experiment name or path to create a new experiment.\n")
-        #    sys.exit(1) 
-    
         # create prediction directory tree
         file_helpers.create_local_dir(self.__local_pred.basedir)
         for d in common_exp_infos.PREDICTION_DIRS.values():
@@ -256,20 +250,7 @@ class GLExperimentWriter(object):
         for d in common_exp_infos.EXEC_RESULTS_DIRS.values():
             file_helpers.create_local_dir(os.path.join(self.__local_verif.basedir, d))
 
-        #create initial configuration directory
-        #conf_dir = os.path.join(exp_dir, common_exp_infos.CONFIG_BASEDIR)
-        #file_helpers.create_local_dir(conf_dir)
-    
- 
-#     def create_init_config_files(self):
-#         config_dir = os.path.join(self.__local_basedir, common_exp_infos.CONFIG_BASEDIR) 
-#         assert os.path.isdir(config_dir)
-#     
-#         gl_file = self.__gl_config.get_gl_filepath()
-#         shutil.copy(gl_file, config_dir)
-# 
-#         exp_conf_file = self.__exp_config.get_conf_filepath()
-#         shutil.copy(exp_conf_file, config_dir)
+
 
 
     def create_guidelines_catalog(self, guidelines_file):

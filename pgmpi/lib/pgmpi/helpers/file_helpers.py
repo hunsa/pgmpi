@@ -9,13 +9,13 @@ import inspect
 from inspect import isclass
 
 def create_local_dir(dirpath):
+    print ("Creating local experiment directory %s" % dirpath)
     if not os.path.exists(dirpath):
-        print ("Creating local experiment directory %s" % dirpath)
         os.system("mkdir -p %s" % dirpath)
     else:
-        if os.path.isdir(dirpath):   
-            print  >> sys.stderr, "Warning: Local directory already exists - %s" % dirpath
-            return False
+        if not os.path.isdir(dirpath):   
+            print  >> sys.stderr, "ERROR: Cannot create directory, a file with the same name already exists: %s" % dirpath
+            exit(1)
     return True
   
 def read_json_config_file(filepath):
