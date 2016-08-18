@@ -22,7 +22,7 @@ class AbstractExpDescription(object):
         
         machinfo = machine_setup_local.PGMPIMachineConfiguratorLocal()
    
-        exp = glexp.GLExperimentWriter(self.bench, machinfo, self.local_basedir, self.remote_basedir)
+        exp = glexp.GLExperimentWriter(self.bench, machinfo)
 
         return exp
     

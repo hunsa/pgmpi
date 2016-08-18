@@ -32,7 +32,7 @@ class PGMPIMachineConfiguratorLocal(abs_machine_setup.PGMPIAbstractMachineConfig
         assert(self.mpirun_path != ""), "No mpirun path specified. Please check the informations provided in the machine configuration script."
         
         check_bench = ["BENCH_BINARY_PATH=\"%s\"" % (bench_binary_path),
-                       "if [ ! -f \"$BENCH_BINARY_PATH\" ]; then" , 
+                       "if [ ! -x \"$BENCH_BINARY_PATH\" ]; then" , 
                         "echo \"Benchmark path incorrect: $BENCH_BINARY_PATH \"" ,
                         "exit 1",
                         "fi",
@@ -55,7 +55,7 @@ class PGMPIMachineConfiguratorLocal(abs_machine_setup.PGMPIAbstractMachineConfig
             outlogname = "$OUTPUT_DIR/logs/mpi_bench_r%d.log" % (i)
                 
             mpirun_calls += [ "echo \"Starting mpirun %d...\"" %(i),
-                              "%s %s %s >> %s 2>> %s" % ( self.mpirun_path, mpirun_args, 
+                              "%s %s %s > %s 2> %s" % ( self.mpirun_path, mpirun_args, 
                                                                bench_call,
                                                                outname, outlogname),
                             "echo \"Done.\"",

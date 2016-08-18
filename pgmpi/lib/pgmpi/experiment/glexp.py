@@ -36,7 +36,7 @@ class GLExperimentWriter(object):
     __input_file_name = "input.txt"
     __input_job_name = "job.sh"
 
-    def __init__(self, benchmark, machine_configurator, local_basedir, remote_basedir):
+    def __init__(self, benchmark, machine_configurator):
 
         # initialize guideline config and guideline_catalog from the predefined directory
         exp_config_dir = os.path.join(os.getcwd(), common_exp_infos.CONFIG_BASEDIR)
@@ -49,12 +49,12 @@ class GLExperimentWriter(object):
         self.__benchmark = benchmark
         self.__machine_configurator = machine_configurator
         
-        self.__local_basedir = local_basedir
-        
+        self.__local_basedir = ""
+    
         # use absolute path for if the remote directory is the same as the local one
-        self.__remote_basedir = remote_basedir
-        if self.__remote_basedir == self.__local_basedir:
-            self.__remote_basedir = os.path.abspath(self.__remote_basedir)
+        self.__remote_basedir = ""
+        #if self.__remote_basedir == self.__local_basedir:
+        #    self.__remote_basedir = os.path.abspath(self.__remote_basedir)
         
     
         local_pred_dir = os.path.join(self.__local_basedir, common_exp_infos.PREDICTION_BASEDIR)
@@ -74,7 +74,8 @@ class GLExperimentWriter(object):
                                          alldata_rel_dir = common_exp_infos.EXEC_RESULTS_DIRS["alldata"])
         
         
-        remote_pred_dir = os.path.join(self.__remote_basedir, common_exp_infos.PREDICTION_BASEDIR)
+        #remote_pred_dir = os.path.join(self.__remote_basedir, common_exp_infos.PREDICTION_BASEDIR)
+        remote_pred_dir = ""
         self.__remote_pred = DirStructure(basedir = remote_pred_dir, 
                                          input_rel_dir = common_exp_infos.PREDICTION_DIRS["input"],
                                          job_rel_dir = common_exp_infos.PREDICTION_DIRS["jobs"],
@@ -82,7 +83,8 @@ class GLExperimentWriter(object):
                                          )
 
         
-        remote_verif_dir = os.path.join(self.__remote_basedir, common_exp_infos.EXEC_BASEDIR)
+        #remote_verif_dir = os.path.join(self.__remote_basedir, common_exp_infos.EXEC_BASEDIR)
+        remote_verif_dir = ""
         self.__remote_verif = DirStructure(basedir = remote_verif_dir, 
                                          input_rel_dir = common_exp_infos.EXEC_DIRS["input"],
                                          job_rel_dir = common_exp_infos.EXEC_DIRS["jobs"],
@@ -91,12 +93,12 @@ class GLExperimentWriter(object):
         
         
     
-    def get_exp_dir(self):
-        return self.__local_basedir
+#    def get_exp_dir(self):
+#        return self.__local_basedir
     
     
-    def get_remote_exp_dir(self):
-        return self.__remote_basedir
+#    def get_remote_exp_dir(self):
+#        return self.__remote_basedir
 
     def get_local_pred_input_dir(self):
         return self.__local_pred.input_dir
@@ -123,6 +125,12 @@ class GLExperimentWriter(object):
     
     def get_local_verif_output_dir(self):
         return self.__local_verif.raw_data_dir
+
+    def get_remote_pred_output_dir(self):
+        return self.__remote_pred.raw_data_dir
+    
+    def get_remote_verif_output_dir(self):
+        return self.__remote_verif.raw_data_dir
     
     def get_local_pred_processed_dir(self):
         return self.__local_pred.processed_data_dir
@@ -188,12 +196,15 @@ class GLExperimentWriter(object):
         assert os.path.isdir(self.__local_pred.job_dir)
         print "Generating job files in %s..." % self.__local_pred.job_dir       
          
-        input_file_path = os.path.join(self.__remote_pred.input_dir, self.__input_file_name)
+        #input_file_path = os.path.join(self.__remote_pred.input_dir, self.__input_file_name)
+        input_file_dir = os.path.relpath(self.__remote_pred.input_dir, self.__remote_pred.job_dir)
+        input_file_path = os.path.join(input_file_dir, self.__input_file_name)
         
         bench_binary_path = self.__benchmark.get_prediction_bench_binary()
         bench_args = self.__benchmark.get_prediction_bench_args(input_file_path, self.__exp_config) 
         
-        job_contents = self.__machine_configurator.generate_prediction_job_contents(self.__exp_config, bench_binary_path, bench_args, self.__remote_pred.raw_data_dir)
+        output_dir = os.path.relpath(self.__remote_pred.raw_data_dir, self.__remote_pred.job_dir)
+        job_contents = self.__machine_configurator.generate_prediction_job_contents(self.__exp_config, bench_binary_path, bench_args, output_dir)
         jobfile = os.path.join(self.__local_pred.job_dir, self.__input_job_name)
         with open(jobfile, "w") as f:
                 f.write( "%s\n" % (job_contents))
@@ -204,12 +215,16 @@ class GLExperimentWriter(object):
         assert os.path.isdir(self.__local_verif.job_dir)
         print "Generating job files in %s..." % self.__local_verif.job_dir     
          
-        input_file_path = os.path.join(self.__remote_verif.input_dir, self.__input_file_name)
+        #input_file_path = os.path.join(self.__remote_verif.input_dir, self.__input_file_name)
+        input_file_dir = os.path.relpath(self.__remote_verif.input_dir, self.__remote_verif.job_dir)
+        input_file_path = os.path.join(input_file_dir, self.__input_file_name)
+        
         
         bench_binary_path = self.__benchmark.get_verification_bench_binary()
         bench_args = self.__benchmark.get_verification_bench_args(input_file_path, self.__exp_config) 
         
-        job_contents = self.__machine_configurator.generate_verification_job_contents(self.__exp_config, bench_binary_path, bench_args, self.__remote_verif.raw_data_dir)
+        output_dir = os.path.relpath(self.__remote_verif.raw_data_dir, self.__remote_verif.job_dir)
+        job_contents = self.__machine_configurator.generate_verification_job_contents(self.__exp_config, bench_binary_path, bench_args, output_dir)
         jobfile = os.path.join(self.__local_verif.job_dir, self.__input_job_name)
         with open(jobfile, "w") as f:
                 f.write( "%s\n" % (job_contents))

@@ -1,8 +1,8 @@
 import os
 from __builtin__ import len
 
-PREDICTION_BENCH_REL_PATH = "bin/mpibenchmarkPredNreps"
-REPROMPI_BENCH_REL_PATH = "bin/mpibenchmark"
+PREDICTION_BENCH_BINARY = "mpibenchmarkPredNreps"
+REPROMPI_BENCH_BINARY = "mpibenchmark"
 
 from pgmpi.benchmark import abs_benchmark
 
@@ -56,10 +56,10 @@ class GLReproMPIBench (abs_benchmark.BenchmarkGenerator):
                 
 
     def get_verification_bench_binary(self):
-        return os.path.join(self.__bench_path, REPROMPI_BENCH_REL_PATH)
+        return os.path.join(self.__bench_path, REPROMPI_BENCH_BINARY)
 
     def get_prediction_bench_binary(self):
-        return os.path.join(self.__bench_path, PREDICTION_BENCH_REL_PATH)
+        return os.path.join(self.__bench_path, PREDICTION_BENCH_BINARY)
 
     def get_prediction_bench_args(self, inputfile_path, expconfig):
         methods = expconfig.get_prediction_methods()

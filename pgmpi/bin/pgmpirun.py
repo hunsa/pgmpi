@@ -124,7 +124,18 @@ def exec_setup(args):
         experiment.generate_pred_input_files()
         experiment.create_prediction_jobs()
         
-        current_job_dir =  experiment.get_remote_pred_job_dir()
+        print OUTPUT_SEPARATOR
+        print OUTPUT_SEPARATOR
+        #    if not experiment.get_exp_dir() == experiment.get_remote_exp_dir():
+        print "To proceed with the experiment: "
+        print "1. Copy: \n\t%s \nto the target machine in:\n\t$REMOTE_DIR\n" % (experiment.get_local_pred_job_dir()) 
+        print OUTPUT_SEPARATOR
+        print "2. On the target machine: \n\tcd $REMOTE_DIR/%s" % (os.path.basename(experiment.get_remote_pred_job_dir()))
+        print OUTPUT_SEPARATOR
+        print "3. Execute the job in: \n\tjob.sh\n"
+        print OUTPUT_SEPARATOR
+        print "4. Copy results from the target machine directory: \n\t$REMOTE_DIR/%s \nto the local machine in: \n\t%s" % (experiment.get_remote_pred_output_dir(), experiment.get_local_pred_job_dir())
+        print OUTPUT_SEPARATOR
     
     elif args.step == "verif":
         processed_dir = experiment.get_local_pred_processed_dir()
@@ -137,20 +148,25 @@ def exec_setup(args):
         experiment.generate_verification_input_files(prediction_data)
         experiment.create_verification_jobs()
 
-        current_job_dir =  experiment.get_remote_verif_job_dir()
+        print OUTPUT_SEPARATOR
+        print OUTPUT_SEPARATOR
+        #    if not experiment.get_exp_dir() == experiment.get_remote_exp_dir():
+        print "To proceed with the experiment: "
+        print "1. Copy: \n\t%s \nto the target machine in:\n\t$REMOTE_DIR\n" % (experiment.get_local_verif_job_dir()) 
+        print OUTPUT_SEPARATOR
+        print "2. On the target machine: \n\tcd $REMOTE_DIR/%s" % (os.path.basename(experiment.get_remote_verif_job_dir()))
+        print OUTPUT_SEPARATOR
+        print "3. Execute the job in: \n\tjob.sh\n"
+        print OUTPUT_SEPARATOR
+        print "4. Copy results from the target machine directory: \n\t$REMOTE_DIR/%s \nto the local machine in: \n\t%s" % (experiment.get_remote_verif_output_dir(), experiment.get_local_verif_job_dir())
+        print OUTPUT_SEPARATOR
+
         
     else:
         print >> sys.stderr, "ERROR: Unknown option."
         exit(1)
     
-    print OUTPUT_SEPARATOR
-    print OUTPUT_SEPARATOR
-    if not os.path.abspath(experiment.get_exp_dir()) == experiment.get_remote_exp_dir():
-        print "To execute the experiment: \nCopy: \n\t%s \nTo the target machine in: \n\t%s\n" % (experiment.get_exp_dir(),  os.path.dirname(experiment.get_remote_exp_dir())) 
-        print OUTPUT_SEPARATOR
-    print "Execute the jobs from: \n\t%s\n" % (current_job_dir)
-    print OUTPUT_SEPARATOR
-    
+        
     
 
 def exec_process(args):
