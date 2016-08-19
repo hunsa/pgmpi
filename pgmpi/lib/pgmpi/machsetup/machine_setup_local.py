@@ -27,7 +27,7 @@ from pgmpi.machsetup import abs_machine_setup
 class PGMPIMachineConfiguratorLocal(abs_machine_setup.PGMPIAbstractMachineConfigurator):
 
     mpirun_path = "mpirun"
-    mpi_common_args = "-bind-to core"
+    mpi_common_args = ""
         
     
     def generate_prediction_job_contents(self, expconf, bench_binary_path, bench_args, remote_output_dir):

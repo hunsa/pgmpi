@@ -2,7 +2,7 @@
 "procs": 2,
 "nodes": 1,
 "nnp": 2,
-"nmpiruns": 2,
+"nmpiruns": 5,
 
 "prediction": {
     "min": 10,
@@ -10,7 +10,7 @@
     "step": 5,
     "methods": ["cov_mean"],   
     "thresholds": [0.01],
-    "windows": [10],
+    "windows": [30],
     "nmpiruns": 3
 }
 

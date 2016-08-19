@@ -30,12 +30,15 @@ class ExpDescription(abs_exp_desc.AbstractExpDescription):
     # Path to the ReproMPI benchmark binaries on the target machine 
     # (more info on how to install ReproMPI can be found here: 
     # https://github.com/hunsa/reprompi)
-    benchmark_path_remote = "/home/carpenamarie/code/mpibenchmark-0.9.7/bin"
+    benchmark_path_remote = "/home/carpenamarie/code/reprompi-1.0.0/bin"
 
     def setup_exp(self):
         
         bench    = reproMPIbench.GLReproMPIBench(self.benchmark_path_remote)
-        machinfo = slurm_cluster.PGMPIMachineConfiguratorSlurm()
+        machinfo = slurm_cluster.PGMPIMachineConfiguratorSlurm(account = None, 
+                                                               partition = None, 
+                                                               qos = None, 
+                                                               walltime = None)
    
         exp = glexp.GLExperimentWriter(bench, machinfo)
 

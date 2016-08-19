@@ -91,6 +91,8 @@ guidelines for MPI collectives:
 - Monotony guidelines
 - Split-robustness guidelines.
 
+The full list of supported performance guidelines can be found in our
+paper.
 
 The input file specifying the performance guidelines to be tested is a
 *json* file with the following format:

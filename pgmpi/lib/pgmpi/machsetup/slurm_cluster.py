@@ -99,7 +99,7 @@ class PGMPIMachineConfiguratorSlurm(abs_machine_setup.PGMPIAbstractMachineConfig
             outlogname = "$OUTPUT_DIR/logs/mpi_bench_r%d.log" % (i)
 
             mpirun_calls += [ "echo \"Starting mpirun %d...\" " %(i),
-                             "%s %s >> %s 2>> %s" % ( self.mpirun_call, 
+                             "%s %s > %s 2> %s" % ( self.mpirun_call, 
                                                                bench_call,
                                                                outname, outlogname),
                             "echo \"Done.\" ",
