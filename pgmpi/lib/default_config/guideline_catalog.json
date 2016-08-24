@@ -2,20 +2,79 @@
       {         
             "orig": "MPI_Gather",
             "mock": "MPI_Gather_with_MPI_Allgather",
-            "msizes":  [100, 1024, 8192]
+            "msizes":  [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 100, 1500, 5000, 10000, 1048576, 102400]
        },
        {
             "orig": "MPI_Gather",
             "mock": "MPI_Gather_with_MPI_Reduce",
-            "msizes":  [100, 1024, 8192, 2,3,4]
+            "msizes":  [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 100, 1500, 5000, 10000, 1048576, 102400]
        },
        {
-            "orig": "MPI_Bcast",
-            "msizes":  [100, 1024, 8]
+            "orig": "MPI_Allgather",
+            "mock": "MPI_Allgather_with_MPI_Alltoall",
+            "msizes":  [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 100, 1500, 5000, 10000, 1048576, 102400]
        },
        {
+            "orig": "MPI_Allgather",
+            "mock": "MPI_Allgather_with_MPI_Allreduce",
+            "msizes":  [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 100, 1500, 5000, 10000, 1048576, 102400]
+       },
+       {
+            "orig": "MPI_Scatter",
+            "mock": "MPI_Scatter_with_MPI_Bcast",
+            "msizes":  [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 100, 1500, 5000, 10000, 1048576, 102400]
+       },
+       {
+            "orig": "MPI_Reduce",
+            "mock": "MPI_Reduce_with_MPI_Allreduce",
+            "msizes":  [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 100, 1500, 5000, 10000, 1048576, 102400]
+       },
+       {
+            "orig": "MPI_Reduce_scatter",
+            "mock": "MPI_Reduce_scatter_with_MPI_Allreduce",
+            "msizes":  [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 100, 1500, 5000, 10000, 1048576, 102400]
+        },
+        {
             "orig": "MPI_Bcast",
             "mock": "MPI_Bcast_with_MPI_Scatter_MPI_Allgather",
-            "msizes":  [100, 1024, 8192, 512]
+            "msizes":  [16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 100, 1500, 5000, 10000, 1048576, 102400]
+       },
+       {
+            "orig": "MPI_Allgather",
+            "mock": "MPI_Allgather_with_MPI_Gather_MPI_Bcast",
+            "msizes":  [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 100, 1500, 5000, 10000, 1048576, 102400]
+       },
+       {
+            "orig": "MPI_Allreduce",
+            "mock": "MPI_Allreduce_with_MPI_Reduce_MPI_Bcast",
+            "msizes":  [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 100, 1500, 5000, 10000, 1048576, 102400]
+       },
+       {
+            "orig": "MPI_Allreduce",
+            "mock": "MPI_Allreduce_with_MPI_Reduce_scatter_block_MPI_Allgather",
+            "msizes":  [16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 1048576, 102400]
+       },
+       {
+            "orig": "MPI_Reduce",
+            "mock": "MPI_Reduce_with_MPI_Reduce_scatter_block_MPI_Gather",
+            "msizes":  [16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 1048576, 102400]
+       },
+       {
+            "orig": "MPI_Reduce_scatter_block",
+            "mock": "MPI_Reduce_scatter_block_with_MPI_Reduce_MPI_Scatter",
+            "msizes":  [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 100, 1500, 5000, 10000, 1048576, 102400]
+       },
+       {
+            "orig": "MPI_Scan",
+            "mock": "MPI_Scan_with_MPI_Exscan_MPI_Reduce_local",
+            "msizes":  [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 100, 1500, 5000, 10000, 1048576, 102400]
+       },
+       { 
+            "orig": "MPI_Reduce_scatter",
+            "mock": "MPI_Reduce_scatter_with_MPI_Reduce_MPI_Scatterv",
+            "msizes":  [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 100, 1500, 5000, 10000, 1048576, 102400]
        }
 ]
+
+
+
