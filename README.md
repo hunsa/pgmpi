@@ -1,1 +1,0 @@
-# PGMPI -  MPI Performance Guidelines
