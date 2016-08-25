@@ -1,0 +1,9 @@
+*.Rhistory
+*.aux
+*.bbl
+*.out
+*.log
+*.DS_Store
+*~
+*.blg
+*.pyc
