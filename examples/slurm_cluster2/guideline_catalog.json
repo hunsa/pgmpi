@@ -1,0 +1,30 @@
+ [   
+      {         
+            "orig": "MPI_Gather",
+            "mock": "MPI_Gather_with_MPI_Allgather",
+            "msizes":  [1, 2, 4, 8, 16, 32, 64]
+       },
+       {
+            "orig": "MPI_Gather",
+            "mock": "MPI_Gather_with_MPI_Reduce",
+            "msizes":  [1, 2, 4, 8, 16, 32, 64, 128, 256, 512]
+       },
+       {
+            "orig": "MPI_Allgather",
+            "mock": "MPI_Allgather_with_MPI_Alltoall",
+            "msizes":  [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]
+       },
+       {
+            "orig": "MPI_Gather",
+            "msizes":  [1, 2, 4, 8]
+        },
+        {
+            "orig": "MPI_Allgather",
+            "msizes":  [16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192]
+       },
+        {
+            "orig": "MPI_Allreduce",
+            "mock": "MPI_Allreduce_with_MPI_Reduce_scatter_block_MPI_Allgather",
+            "msizes":  [16, 32, 64]
+        }
+]
